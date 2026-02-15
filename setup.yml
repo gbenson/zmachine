@@ -5,6 +5,9 @@
     - name: Unwanted packages are not installed
       ansible.builtin.apt:
         pkg:
+          - avahi-daemon
+          - bluez
+          - bluez-firmware
           - cloud-init
           - modemmanager
           - rpicam-apps-core
@@ -32,6 +35,9 @@
         masked: true
         state: stopped
       loop:
+        - avahi-daemon
+        - avahi-daemon.socket
+        - bluetooth
         - swap.target
       become: yes
       tags:
@@ -46,3 +52,13 @@
       become: yes
       tags:
         - filesystem
+
+    - name: Bootloader is configured
+      ansible.builtin.blockinfile:
+        path: /boot/firmware/config.txt
+        block: |
+          # Disable Bluetooth
+          dtoverlay=disable-bt
+      become: yes
+      tags:
+        - boot
