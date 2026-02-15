@@ -1,0 +1,37 @@
+---
+- hosts: all
+
+  tasks:
+    - name: Unwanted packages are not installed
+      ansible.builtin.apt:
+        pkg:
+          - cloud-init
+          - modemmanager
+          - rpicam-apps-core
+          - rpicam-apps-lite
+          - rpi-connect-lite
+          - rpi-cloud-init-mods
+        state: absent
+      become: yes
+      tags:
+        - packages
+
+    - name: Required packages are installed
+      ansible.builtin.apt:
+        pkg:
+          - git
+          - tmux
+      become: yes
+      tags:
+        - packages
+
+    - name: Unwanted services are stopped and masked
+      ansible.builtin.systemd:
+        name: "{{ item }}"
+        masked: true
+        state: stopped
+      loop:
+        - swap.target
+      become: yes
+      tags:
+        - services
