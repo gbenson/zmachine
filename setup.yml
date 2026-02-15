@@ -35,9 +35,14 @@
         masked: true
         state: stopped
       loop:
+        - apt-daily
+        - apt-daily.timer
+        - apt-daily-upgrade
+        - apt-daily-upgrade.timer
         - avahi-daemon
         - avahi-daemon.socket
         - bluetooth
+        - man-db.timer
         - swap.target
       become: yes
       tags:
@@ -48,6 +53,7 @@
         path: "{{ item }}"
         state: absent
       loop:
+        - /var/lib/man-db/auto-update
         - /var/swap
       become: yes
       tags:
