@@ -24,6 +24,8 @@
       ansible.builtin.apt:
         pkg:
           - git
+          - golang
+          - libsdl2-dev
           - tmux
       become: yes
       tags:
@@ -84,3 +86,23 @@
       become: yes
       tags:
         - boot
+
+    - name: Bash is configured
+      ansible.builtin.copy:
+        dest: ~/.bash_aliases
+        mode: "0644"
+        content: |
+          alias ll="ls -l"
+          alias rm="rm -i"
+          alias cp="cp -i"
+          alias mv="mv -i"
+      tags:
+        - devel
+
+    - name: Git is configured
+      ansible.builtin.copy:
+        src: ~/.gitconfig
+        dest: ~/.gitconfig
+        mode: "0644"
+      tags:
+        - devel
