@@ -63,8 +63,24 @@
       ansible.builtin.blockinfile:
         path: /boot/firmware/config.txt
         block: |
+          # Disable any boot delay in case zero isn't the default
+          boot_delay=0
+
+          # Disable the rainbow splash screen
+          disable_splash=1
+
           # Disable Bluetooth
           dtoverlay=disable-bt
+
+          # Disable composite video output
+          enable_tvout=0
+
+          # Enable cut-down firmware. This causes some errors in dmesg
+          # (compare `notes/gpu_mem-{16,32}.dmesg`) but saves a chunk
+          # of RAM (`free -m` total goes from 416 with default gpu_mem
+          # to 464 with `gpu_mem=16`, i.e. the default must be 64 MiB).
+          # It also trims about half a second off the boot time.
+          gpu_mem=16
       become: yes
       tags:
         - boot
