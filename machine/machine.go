@@ -23,6 +23,8 @@ type Machine struct {
 
 	ctx  context.Context
 	stop context.CancelFunc
+
+	metrics *readerMetrics
 }
 
 // contextKey is a value for use with context.WithValue. It's used
@@ -59,11 +61,19 @@ func (m *Machine) Start(ctx context.Context) error {
 	}
 
 	r := &reader{ctx: ctx, source: m.Source}
+	m.metrics = &r.metrics
+
 	return m.Sink.Start(ctx, r)
 }
 
 // Close implements [io.Closer].
 func (m *Machine) Close() error {
+	defer func() {
+		if rm := m.metrics; rm != nil {
+			rm.logReport(util.ComponentLogger(m.ctx, rm))
+		}
+	}()
+
 	if stop := m.stop; stop != nil {
 		stop()
 	}

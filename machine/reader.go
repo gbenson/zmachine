@@ -7,12 +7,16 @@ import (
 )
 
 type reader struct {
-	ctx    context.Context
-	source AudioSource
+	ctx     context.Context
+	source  AudioSource
+	metrics readerMetrics
 }
 
 // Read implements [io.Reader].
 func (r *reader) Read(p []byte) (n int, err error) {
+	r.metrics.setWorking()
+	defer r.metrics.setIdle()
+
 	sizeBytes := len(p)
 	if sizeBytes < 1 || (sizeBytes&3) != 0 {
 		return 0, fmt.Errorf("unexpected buffer size %d", sizeBytes)
