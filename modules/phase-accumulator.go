@@ -1,0 +1,61 @@
+package modules
+
+import (
+	"context"
+	"math"
+
+	"gbenson.net/go/zmachine"
+)
+
+type PhaseAccumulator struct {
+	timestep float64 // param: how much does time advance when we Step()?
+	incr     float64 // input: how much do we add to phase when we Step()
+	phase    float64 // output: the accumulated phase; range: [0..1)
+}
+
+// Start implements [zmachine.Starter].
+func (pa *PhaseAccumulator) Start(ctx context.Context) error {
+	machine := zmachine.FromContext(ctx)
+	pa.timestep = machine.SampleRate.Period()
+	return nil
+}
+
+func (pa *PhaseAccumulator) Frequency() float64 {
+	return pa.incr / pa.timestep
+}
+
+func (pa *PhaseAccumulator) SetFrequency(hz float64) {
+	if hz < 0 {
+		// XXX report clipping?
+		pa.incr = 0
+		return
+	}
+
+	incr := pa.timestep * hz
+	if incr > 0.5 {
+		// XXX report aliasing?
+		incr -= math.Floor(incr)
+		if incr > 0.5 {
+			incr = 1 - incr
+		}
+	}
+
+	pa.incr = incr
+}
+
+func (pa *PhaseAccumulator) Phase() float64 {
+	return pa.phase
+}
+
+func (pa *PhaseAccumulator) Step() {
+	phase := pa.phase + pa.incr
+	if phase >= 1 {
+		phase -= 1
+	}
+	pa.phase = phase
+}
+
+// Reset resets the accumulated phase to zero.
+func (pa *PhaseAccumulator) Reset() {
+	pa.phase = 0
+}

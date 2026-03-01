@@ -11,9 +11,6 @@ import (
 const DefaultSampleRate SampleRate = 48000
 const DefaultMaxLatency = 10 * time.Millisecond
 
-// A SampleRate is an integer number of samples per second.
-type SampleRate uint32
-
 // A Machine manages a collection of components.
 type Machine struct {
 	SampleRate SampleRate

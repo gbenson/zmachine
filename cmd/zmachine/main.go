@@ -6,6 +6,7 @@ import (
 
 	"gbenson.net/go/logger/log"
 	"gbenson.net/go/zmachine"
+	zm "gbenson.net/go/zmachine/modules"
 	zsdl "gbenson.net/go/zmachine/sdl"
 	"github.com/veandco/go-sdl2/sdl"
 )
@@ -34,16 +35,29 @@ func run(ctx context.Context) error {
 }
 
 type generator struct {
+	pa zm.PhaseAccumulator
+
+	outputLevel float64
+}
+
+func (sg *generator) Start(ctx context.Context) error {
+	if err := sg.pa.Start(ctx); err != nil {
+		return err
+	}
+
+	sg.pa.SetFrequency(440)
+	sg.outputLevel = 0.125 // approx -18dB; 7 on a 0..10 ↦ -60..0dB volume knob
+
+	return nil
 }
 
 func (sg *generator) Generate(ctx context.Context, buf []float32) (int, error) {
-	m := len(buf)
-	n := m / 2
-	for i := 0; i < n; i++ {
-		buf[i] = 1
-	}
-	for i := n; i < m; i++ {
-		buf[i] = -1
+	for i := range buf {
+		sg.pa.Step()
+
+		output := sg.pa.Phase()*2 - 1
+		output *= sg.outputLevel
+		buf[i] = float32(output)
 	}
 	return len(buf), nil
 }
