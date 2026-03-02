@@ -21,8 +21,15 @@ type AudioSource = machine.AudioSource
 // An AudioSink is a component that consumes samples.
 type AudioSink = machine.AudioSink
 
-// A SampleRate is an integer number of samples per second.
-type SampleRate = machine.SampleRate
+// A Frequency is a float64 number of cycles per second.
+type Frequency = machine.Frequency
+
+// Frequently used units of frequency.
+const (
+	Hz  = machine.Hz
+	KHz = machine.KHz
+	BPM = machine.BPM
+)
 
 // ContextKey is a context key that can be used in zmachine-managed
 // code to access the managing [Machine]. The associated value will

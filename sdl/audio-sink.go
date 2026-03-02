@@ -10,7 +10,6 @@ import (
 	"math/bits"
 	"runtime"
 	"sync/atomic"
-	"time"
 	"unsafe"
 
 	"gbenson.net/go/logger"
@@ -40,7 +39,7 @@ func (sink *AudioSink) Start(ctx context.Context, r io.Reader) error {
 	// Calculate the maximum number of frames we can buffer without
 	// exceeding the required maximum latency at the requested sample
 	// rate.
-	maxBufferFrames := uint(sampleRate) * uint(maxLatency) / uint(time.Second)
+	maxBufferFrames := uint(sampleRate.Hz() * maxLatency.Seconds())
 
 	// SDL wants a power of two, so we round down from our maximum.
 	// https://wiki.libsdl.org/SDL2/SDL_OpenAudioDevice says "good

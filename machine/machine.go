@@ -8,12 +8,12 @@ import (
 	"gbenson.net/go/zmachine/util"
 )
 
-const DefaultSampleRate SampleRate = 48000
+const DefaultSampleRate Frequency = 48 * KHz
 const DefaultMaxLatency = 10 * time.Millisecond
 
 // A Machine manages a collection of components.
 type Machine struct {
-	SampleRate SampleRate
+	SampleRate Frequency
 	MaxLatency time.Duration
 	Source     AudioSource
 	Sink       AudioSink
@@ -40,10 +40,10 @@ func (m *Machine) Start(ctx context.Context) error {
 		panic("nil sink")
 	}
 
-	if m.SampleRate < 1 {
+	if m.SampleRate <= 0 {
 		m.SampleRate = DefaultSampleRate
 	}
-	if m.MaxLatency < 1 {
+	if m.MaxLatency <= 0 {
 		m.MaxLatency = DefaultMaxLatency
 	}
 

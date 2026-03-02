@@ -4,7 +4,6 @@ import (
 	"math"
 	"testing"
 
-	"gbenson.net/go/zmachine"
 	"gotest.tools/v3/assert"
 )
 
@@ -14,7 +13,7 @@ func TestPhaseAccumulator(t *testing.T) {
 	assert.Equal(t, pa.incr, 0.0)
 	assert.Equal(t, pa.Phase(), 0.0)
 
-	pa.timestep = zmachine.SampleRate(25000).Period() // XXX test Start()
+	pa.timestep = (25 * KHz).Period() // XXX test Start()
 	assert.Equal(t, pa.timestep, 40e-6)
 	assert.Equal(t, pa.incr, 0.0)
 	assert.Equal(t, pa.Phase(), 0.0)
@@ -56,7 +55,7 @@ func TestPhaseAccumulator(t *testing.T) {
 
 func TestFrequencyClipping(t *testing.T) {
 	pa := &PhaseAccumulator{}
-	pa.timestep = zmachine.SampleRate(44100).Period() // XXX test Start()
+	pa.timestep = Frequency(44100).Period() // XXX test Start()
 
 	assert.Equal(t, pa.incr, 0.0)
 
@@ -77,7 +76,7 @@ func TestFrequencyClipping(t *testing.T) {
 		{44102, 2},
 		{44103, 3},
 	} {
-		pa.SetFrequency(float64(tc.set))
+		pa.SetFrequency(Frequency(tc.set))
 		assert.Check(t, 0 <= pa.incr)
 		assert.Check(t, pa.incr <= 0.5)
 		got := pa.Frequency()

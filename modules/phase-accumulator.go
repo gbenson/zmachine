@@ -20,11 +20,12 @@ func (pa *PhaseAccumulator) Start(ctx context.Context) error {
 	return nil
 }
 
-func (pa *PhaseAccumulator) Frequency() float64 {
-	return pa.incr / pa.timestep
+func (pa *PhaseAccumulator) Frequency() Frequency {
+	return Frequency(pa.incr / pa.timestep)
 }
 
-func (pa *PhaseAccumulator) SetFrequency(hz float64) {
+func (pa *PhaseAccumulator) SetFrequency(f Frequency) {
+	hz := f.Hz()
 	if hz < 0 {
 		// XXX report clipping?
 		pa.incr = 0
