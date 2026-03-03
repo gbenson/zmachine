@@ -5,6 +5,7 @@ import (
 	"io"
 	"time"
 
+	"gbenson.net/go/logger"
 	"gbenson.net/go/zmachine/util"
 )
 
@@ -40,16 +41,8 @@ func (m *Machine) Start(ctx context.Context) error {
 		panic("nil sink")
 	}
 
-	if m.SampleRate <= 0 {
-		m.SampleRate = DefaultSampleRate
-	}
-	if m.MaxLatency <= 0 {
-		m.MaxLatency = DefaultMaxLatency
-	}
-
-	ctx = context.WithValue(ctx, ContextKey, m)
-	ctx, m.stop = context.WithCancel(ctx)
-	m.ctx = ctx
+	m.init(ctx)
+	ctx = m.ctx
 
 	if src, ok := m.Source.(util.Starter); ok {
 		if err := util.LoggedStart(ctx, src); err != nil {
@@ -61,6 +54,29 @@ func (m *Machine) Start(ctx context.Context) error {
 	m.metrics = &r.metrics
 
 	return m.Sink.Start(ctx, r)
+}
+
+func (m *Machine) init(ctx context.Context) {
+	if m.SampleRate <= 0 {
+		m.SampleRate = DefaultSampleRate
+	}
+	if m.MaxLatency <= 0 {
+		m.MaxLatency = DefaultMaxLatency
+	}
+
+	ctx = context.WithValue(ctx, ContextKey, m)
+	ctx, m.stop = context.WithCancel(ctx)
+	m.ctx = ctx
+}
+
+// TestContext returns its receiver's context after associating a
+// [logger.Logger] and a semi-configured [Machine] with it.  It's
+// intended for use with [testing.T].
+func TestContext(t logger.Contexter) context.Context {
+	ctx := logger.TestContext(t)
+	m := &Machine{}
+	m.init(ctx)
+	return m.ctx
 }
 
 // Close implements [io.Closer].
