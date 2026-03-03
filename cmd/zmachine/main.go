@@ -10,11 +10,13 @@ import (
 	"gbenson.net/go/logger/log"
 	"gbenson.net/go/zmachine"
 	. "gbenson.net/go/zmachine/core"
+	"gbenson.net/go/zmachine/midi"
 	zm "gbenson.net/go/zmachine/modules"
 	"gbenson.net/go/zmachine/modules/sid"
 	zsdl "gbenson.net/go/zmachine/sdl"
 	"gbenson.net/go/zmachine/util"
 	"github.com/veandco/go-sdl2/sdl"
+	"gitlab.com/gomidi/midi/v2/drivers/rtmididrv"
 )
 
 func main() {
@@ -45,10 +47,25 @@ func run(ctx context.Context) error {
 	)
 	defer stop()
 
+	drv, err := rtmididrv.New()
+	if err != nil {
+		return err
+	}
+	defer lc.Close(drv)
+
 	g := &generator{}
 	if err := g.Start(ctx); err != nil {
 		return err
 	}
+
+	f := &midi.Follower{
+		Driver:   drv,
+		Receiver: &g.voice,
+	}
+	if err := f.Start(ctx); err != nil {
+		return err
+	}
+	defer f.Stop(ctx)
 
 	r := zmachine.Open(ctx, g)
 	defer lc.Close(r)
@@ -68,7 +85,7 @@ func run(ctx context.Context) error {
 }
 
 type generator struct {
-	arp   zm.TestArpeggiator
+	//arp   zm.TestArpeggiator
 	voice zm.Voice
 	osc1  zm.PhaseAccumulator
 	lfo1  zm.PhaseAccumulator
@@ -82,13 +99,19 @@ type generator struct {
 	outputLevel Fraction
 }
 
+// XXX add a Stopper type to match util.Starter, then, have Start
+// build a list of started components that need stopping; implement
+// generator.stop; and defer call it above (i.e. in run) and below
+// (in Start, if any starter fails). then, make generator.in not a
+// pointer, make generator.Start start it (and so also make gen.stop
+// stop it), and remove the above midi.Follower.Start.
+
 func (sg *generator) Start(ctx context.Context) error {
-	sg.arp.Receiver = &sg.voice
 	sg.filt.Model = sid.Model6581
 
 	for _, s := range []util.Starter{
 		&sg.voice,
-		&sg.arp,
+		//&sg.arp,
 		&sg.osc1,
 		&sg.lfo1,
 		&sg.lfo2,
@@ -118,7 +141,7 @@ func (sg *generator) Start(ctx context.Context) error {
 
 func (sg *generator) Generate(ctx context.Context, buf []float32) (int, error) {
 	for i := range buf {
-		sg.arp.Step()
+		//sg.arp.Step()
 		sg.voice.Step()
 
 		sg.osc1.SetFrequency(sg.voice.Pitch())
