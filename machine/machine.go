@@ -2,6 +2,7 @@ package machine
 
 import (
 	"context"
+	"errors"
 	"io"
 	"time"
 
@@ -19,6 +20,8 @@ type Machine struct {
 	Source     AudioSource
 	Sink       AudioSink
 
+	started bool
+
 	ctx  context.Context
 	stop context.CancelFunc
 
@@ -35,10 +38,14 @@ type contextKey struct{}
 var ContextKey = &contextKey{}
 
 func (m *Machine) Start(ctx context.Context) error {
-	if m.Source == nil {
+	if ctx == nil {
+		panic("nil context")
+	} else if m.Source == nil {
 		panic("nil source")
 	} else if m.Sink == nil {
 		panic("nil sink")
+	} else if m.ctx != nil {
+		return errors.New("already started")
 	}
 
 	m.init(ctx)
@@ -53,7 +60,13 @@ func (m *Machine) Start(ctx context.Context) error {
 	r := &reader{ctx: ctx, source: m.Source}
 	m.metrics = &r.metrics
 
-	return m.Sink.Start(ctx, r)
+	if err := m.Sink.Start(ctx, r); err != nil {
+		defer m.deferableLoggedClose(m.Source)
+		return err
+	}
+
+	m.started = true
+	return nil
 }
 
 func (m *Machine) init(ctx context.Context) {
@@ -81,6 +94,12 @@ func TestContext(t logger.Contexter) context.Context {
 
 // Close implements [io.Closer].
 func (m *Machine) Close() error {
+	if !m.started {
+		return errors.New("never started")
+	} else if m.ctx == nil {
+		panic("nil context")
+	}
+
 	defer func() {
 		if rm := m.metrics; rm != nil {
 			rm.logReport(util.ComponentLogger(m.ctx, rm))
@@ -103,4 +122,10 @@ func (m *Machine) Close() error {
 
 func (m *Machine) loggedClose(c io.Closer) error {
 	return util.LoggedClose(m.ctx, c)
+}
+
+func (m *Machine) deferableLoggedClose(comp any) {
+	if c, ok := comp.(io.Closer); ok {
+		util.DeferableLoggedClose(m.ctx, c)
+	}
 }

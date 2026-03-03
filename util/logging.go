@@ -25,7 +25,7 @@ func LoggedStart(ctx context.Context, s Starter) (err error) {
 	return
 }
 
-// LoggedStart logs a call to the Close method of an [io.Closer].
+// LoggedClose logs a call to the Close method of an [io.Closer].
 func LoggedClose(ctx context.Context, c io.Closer) (err error) {
 	log := ComponentLogger(ctx, c)
 	log.Debug().Msg("Closing")
@@ -33,4 +33,13 @@ func LoggedClose(ctx context.Context, c io.Closer) (err error) {
 		log.Debug().Msg("Closed")
 	}
 	return
+}
+
+// DeferableLoggedClose logs a call to the Close method of an
+// [io.Closer], logging any resulting error with warning level.
+func DeferableLoggedClose(ctx context.Context, c io.Closer) {
+	if err := LoggedClose(ctx, c); err != nil {
+		log := ComponentLogger(ctx, c)
+		log.Warn().Err(err).Msg("")
+	}
 }

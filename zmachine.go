@@ -54,6 +54,7 @@ func Run(ctx context.Context, m *Machine) error {
 	if err := m.Start(ctx); err != nil {
 		return err
 	}
+	defer util.DeferableLoggedClose(ctx, m)
 
 	<-ctx.Done()
 

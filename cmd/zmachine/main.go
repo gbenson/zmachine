@@ -26,7 +26,6 @@ func run(ctx context.Context) error {
 	defer sdl.Quit()
 
 	m := zmachine.New()
-	defer log.LoggedClose(m, "machine")
 
 	m.Source = &generator{}
 	m.Sink = &zsdl.AudioSink{}
