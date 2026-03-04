@@ -7,8 +7,8 @@ import (
 	"gbenson.net/go/logger"
 )
 
-// ComponentLogger returns a [logger.Logger] suitable for comp.
-func ComponentLogger(ctx context.Context, comp any) *logger.Logger {
+// Logger returns a [logger.Logger] suitable for comp.
+func Logger(ctx context.Context, comp any) *logger.Logger {
 	l := logger.Ctx(ctx).With().
 		Str("comp", ComponentName(comp)).
 		Logger()
@@ -17,7 +17,7 @@ func ComponentLogger(ctx context.Context, comp any) *logger.Logger {
 
 // LoggedStart logs a call to the Start method of a [Starter].
 func LoggedStart(ctx context.Context, s Starter) (err error) {
-	log := ComponentLogger(ctx, s)
+	log := Logger(ctx, s)
 	log.Debug().Msg("Starting")
 	if err = s.Start(ctx); err == nil {
 		log.Debug().Msg("Started")
@@ -27,7 +27,7 @@ func LoggedStart(ctx context.Context, s Starter) (err error) {
 
 // LoggedClose logs a call to the Close method of an [io.Closer].
 func LoggedClose(ctx context.Context, c io.Closer) (err error) {
-	log := ComponentLogger(ctx, c)
+	log := Logger(ctx, c)
 	log.Debug().Msg("Closing")
 	if err = c.Close(); err == nil {
 		log.Debug().Msg("Closed")
@@ -39,7 +39,7 @@ func LoggedClose(ctx context.Context, c io.Closer) (err error) {
 // [io.Closer], logging any resulting error with warning level.
 func DeferableLoggedClose(ctx context.Context, c io.Closer) {
 	if err := LoggedClose(ctx, c); err != nil {
-		log := ComponentLogger(ctx, c)
+		log := Logger(ctx, c)
 		log.Warn().Err(err).Msg("")
 	}
 }

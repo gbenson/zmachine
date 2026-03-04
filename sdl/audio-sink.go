@@ -14,6 +14,7 @@ import (
 
 	"gbenson.net/go/logger"
 	"gbenson.net/go/zmachine"
+	"gbenson.net/go/zmachine/util"
 	"github.com/veandco/go-sdl2/sdl"
 )
 
@@ -29,7 +30,7 @@ type AudioSink struct {
 
 // Start implements [machine.Sink].
 func (sink *AudioSink) Start(ctx context.Context, r io.Reader) error {
-	sink.log = zmachine.Logger(ctx, sink)
+	sink.log = util.Logger(ctx, sink)
 	machine := zmachine.FromContext(ctx)
 
 	deviceName := sink.DeviceName

@@ -7,7 +7,6 @@ import (
 	"os/signal"
 	"syscall"
 
-	"gbenson.net/go/logger"
 	"gbenson.net/go/zmachine/machine"
 	"gbenson.net/go/zmachine/util"
 )
@@ -62,11 +61,6 @@ func Run(ctx context.Context, m *Machine) error {
 		return err
 	}
 	return nil
-}
-
-// Logger returns a [logger.Logger] suitable for comp.
-func Logger(ctx context.Context, comp any) *logger.Logger {
-	return util.ComponentLogger(ctx, comp)
 }
 
 // FromContext returns the [Machine] associated with ctx.

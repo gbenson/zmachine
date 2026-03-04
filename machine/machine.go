@@ -102,7 +102,7 @@ func (m *Machine) Close() error {
 
 	defer func() {
 		if rm := m.metrics; rm != nil {
-			rm.logReport(util.ComponentLogger(m.ctx, rm))
+			rm.logReport(util.Logger(m.ctx, rm))
 		}
 	}()
 
