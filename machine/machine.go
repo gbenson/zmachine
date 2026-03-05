@@ -3,6 +3,7 @@ package machine
 import (
 	"context"
 	"errors"
+	"fmt"
 	"io"
 	"time"
 
@@ -26,6 +27,14 @@ type Machine struct {
 	stop context.CancelFunc
 
 	metrics *readerMetrics
+}
+
+// New creates and initializes a new [Machine].
+func New() *Machine {
+	return &Machine{
+		SampleRate: DefaultSampleRate,
+		MaxLatency: DefaultMaxLatency,
+	}
 }
 
 // contextKey is a value for use with context.WithValue. It's used
@@ -54,6 +63,10 @@ func (m *Machine) Start(ctx context.Context) error {
 		panic("nil source")
 	} else if m.Sink == nil {
 		panic("nil sink")
+	} else if m.SampleRate <= 0 {
+		return fmt.Errorf("%v: invalid sample rate", m.SampleRate)
+	} else if m.MaxLatency <= 0 {
+		return fmt.Errorf("%v: invalid max latency", m.MaxLatency)
 	} else if m.ctx != nil {
 		return errors.New("already started")
 	}
@@ -80,13 +93,6 @@ func (m *Machine) Start(ctx context.Context) error {
 }
 
 func (m *Machine) init(ctx context.Context) {
-	if m.SampleRate <= 0 {
-		m.SampleRate = DefaultSampleRate
-	}
-	if m.MaxLatency <= 0 {
-		m.MaxLatency = DefaultMaxLatency
-	}
-
 	ctx = context.WithValue(ctx, machineKey, m)
 	ctx, m.stop = context.WithCancel(ctx)
 	m.ctx = ctx
@@ -97,7 +103,7 @@ func (m *Machine) init(ctx context.Context) {
 // intended for use with [testing.T].
 func TestContext(t logger.Contexter) context.Context {
 	ctx := logger.TestContext(t)
-	m := &Machine{}
+	m := New()
 	m.init(ctx)
 	return m.ctx
 }

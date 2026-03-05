@@ -32,7 +32,7 @@ const (
 
 // New creates and initializes a new [Machine].
 func New() *Machine {
-	return &Machine{}
+	return machine.New()
 }
 
 // Run runs a [Machine] until interrupted or cancelled.
