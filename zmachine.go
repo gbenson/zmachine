@@ -4,8 +4,6 @@ package zmachine
 import (
 	"context"
 	"errors"
-	"os/signal"
-	"syscall"
 
 	"gbenson.net/go/zmachine/machine"
 	"gbenson.net/go/zmachine/util"
@@ -37,14 +35,6 @@ func New() *Machine {
 
 // Run runs a [Machine] until interrupted or cancelled.
 func Run(ctx context.Context, m *Machine) error {
-	ctx, stop := signal.NotifyContext(
-		ctx,
-		syscall.SIGHUP,
-		syscall.SIGINT,
-		syscall.SIGTERM,
-	)
-	defer stop()
-
 	if err := m.Start(ctx); err != nil {
 		return err
 	}

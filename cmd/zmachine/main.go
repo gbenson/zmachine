@@ -3,6 +3,8 @@ package main
 import (
 	"context"
 	"os"
+	"os/signal"
+	"syscall"
 
 	"gbenson.net/go/logger/log"
 	"gbenson.net/go/zmachine"
@@ -30,6 +32,14 @@ func run(ctx context.Context) error {
 
 	m := zmachine.New()
 	ctx = m.WithContext(ctx)
+
+	ctx, stop := signal.NotifyContext(
+		ctx,
+		syscall.SIGHUP,
+		syscall.SIGINT,
+		syscall.SIGTERM,
+	)
+	defer stop()
 
 	m.Source = &generator{}
 	m.Sink = &zsdl.AudioSink{}
