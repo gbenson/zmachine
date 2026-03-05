@@ -30,11 +30,6 @@ const (
 	BPM = machine.BPM
 )
 
-// ContextKey is a context key that can be used in zmachine-managed
-// code to access the managing [Machine]. The associated value will
-// be of type *Machine.
-var ContextKey = machine.ContextKey
-
 // New creates and initializes a new [Machine].
 func New() *Machine {
 	return &Machine{}
@@ -66,9 +61,5 @@ func Run(ctx context.Context, m *Machine) error {
 // FromContext returns the [Machine] associated with ctx.
 // It panics if ctx has no associated machine.
 func FromContext(ctx context.Context) *Machine {
-	machine, _ := ctx.Value(ContextKey).(*Machine)
-	if machine == nil {
-		panic("nil machine")
-	}
-	return machine
+	return machine.FromContext(ctx)
 }

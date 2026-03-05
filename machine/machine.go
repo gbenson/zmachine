@@ -32,10 +32,20 @@ type Machine struct {
 // as a pointer so it fits in an interface{} without allocation.
 type contextKey struct{}
 
-// ContextKey is a context key that can be used in zmachine-managed
+// machineKey is a context key that can be used in zmachine-managed
 // code to access the managing [Machine]. The associated value will
 // be of type *Machine.
-var ContextKey = &contextKey{}
+var machineKey = &contextKey{}
+
+// FromContext returns the [Machine] associated with ctx.
+// It panics if ctx has no associated machine.
+func FromContext(ctx context.Context) *Machine {
+	machine, _ := ctx.Value(machineKey).(*Machine)
+	if machine == nil {
+		panic("nil machine")
+	}
+	return machine
+}
 
 func (m *Machine) Start(ctx context.Context) error {
 	if ctx == nil {
@@ -77,7 +87,7 @@ func (m *Machine) init(ctx context.Context) {
 		m.MaxLatency = DefaultMaxLatency
 	}
 
-	ctx = context.WithValue(ctx, ContextKey, m)
+	ctx = context.WithValue(ctx, machineKey, m)
 	ctx, m.stop = context.WithCancel(ctx)
 	m.ctx = ctx
 }
