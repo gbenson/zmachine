@@ -15,16 +15,6 @@ func Logger(ctx context.Context, comp any) *logger.Logger {
 	return &l
 }
 
-// LoggedStart logs a call to the Start method of a [Starter].
-func LoggedStart(ctx context.Context, s Starter) (err error) {
-	log := Logger(ctx, s)
-	log.Debug().Msg("Starting")
-	if err = s.Start(ctx); err == nil {
-		log.Debug().Msg("Started")
-	}
-	return
-}
-
 // LoggedClose logs a call to the Close method of an [io.Closer].
 func LoggedClose(ctx context.Context, c io.Closer) (err error) {
 	log := Logger(ctx, c)

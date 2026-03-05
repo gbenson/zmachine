@@ -18,15 +18,13 @@ const DefaultMaxLatency = 10 * time.Millisecond
 type Machine struct {
 	SampleRate Frequency
 	MaxLatency time.Duration
-	Source     AudioSource
+	Source     io.Reader
 	Sink       AudioSink
 
 	started bool
 
 	ctx  context.Context
 	stop context.CancelFunc
-
-	metrics *readerMetrics
 }
 
 // New creates and initializes a new [Machine].
@@ -79,17 +77,7 @@ func (m *Machine) Start(ctx context.Context) error {
 	ctx, m.stop = context.WithCancel(m.WithContext(ctx))
 	m.ctx = ctx
 
-	if src, ok := m.Source.(util.Starter); ok {
-		if err := util.LoggedStart(ctx, src); err != nil {
-			return err
-		}
-	}
-
-	r := &reader{ctx: ctx, source: m.Source}
-	m.metrics = &r.metrics
-
-	if err := m.Sink.Start(ctx, r); err != nil {
-		defer m.deferableLoggedClose(m.Source)
+	if err := m.Sink.Start(ctx, m.Source); err != nil {
 		return err
 	}
 
@@ -112,32 +100,13 @@ func (m *Machine) Close() error {
 		panic("nil context")
 	}
 
-	defer func() {
-		if rm := m.metrics; rm != nil {
-			rm.logReport(util.Logger(m.ctx, rm))
-		}
-	}()
-
 	if stop := m.stop; stop != nil {
 		stop()
 	}
 
-	var closers []io.Closer
-	for _, comp := range []any{m.Source, m.Sink} {
-		if c, ok := comp.(io.Closer); ok {
-			closers = append(closers, c)
-		}
+	if c, ok := m.Sink.(io.Closer); ok {
+		defer util.DeferableLoggedClose(m.ctx, c)
 	}
 
-	return util.ForEach(closers, m.loggedClose)
-}
-
-func (m *Machine) loggedClose(c io.Closer) error {
-	return util.LoggedClose(m.ctx, c)
-}
-
-func (m *Machine) deferableLoggedClose(comp any) {
-	if c, ok := comp.(io.Closer); ok {
-		util.DeferableLoggedClose(m.ctx, c)
-	}
+	return nil
 }

@@ -41,7 +41,15 @@ func run(ctx context.Context) error {
 	)
 	defer stop()
 
-	m.Source = &generator{}
+	g := &generator{}
+	if err := g.Start(ctx); err != nil {
+		return err
+	}
+
+	r := zmachine.Open(ctx, g)
+	defer r.Close()
+
+	m.Source = r
 	m.Sink = &zsdl.AudioSink{}
 
 	return zmachine.Run(ctx, m)

@@ -1,6 +1,7 @@
 package machine
 
 import (
+	"context"
 	"fmt"
 	"math"
 	"time"
@@ -33,7 +34,7 @@ func (m *readerMetrics) setIdle() {
 	m.startIdle = startIdle
 }
 
-func (m *readerMetrics) logReport(log *logger.Logger) {
+func (m *readerMetrics) logReport(ctx context.Context) {
 	if m.numReads < 1 {
 		return
 	}
@@ -43,7 +44,7 @@ func (m *readerMetrics) logReport(log *logger.Logger) {
 	loadFactor := float64(workTime) / float64(totalTime)
 	utilization := formatPercent(loadFactor)
 
-	log.Debug().
+	logger.Ctx(ctx).Debug().
 		Int("num_calls", m.numReads).
 		Int64("time_active_ns", workTime).
 		Int64("time_total_ns", totalTime).

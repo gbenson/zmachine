@@ -4,6 +4,7 @@ package zmachine
 import (
 	"context"
 	"errors"
+	"io"
 
 	"gbenson.net/go/zmachine/machine"
 	"gbenson.net/go/zmachine/util"
@@ -31,6 +32,11 @@ const (
 // New creates and initializes a new [Machine].
 func New() *Machine {
 	return machine.New()
+}
+
+// Open returns a new [io.Reader] reading from src.
+func Open(ctx context.Context, src AudioSource) io.ReadCloser {
+	return machine.NewReader(ctx, src)
 }
 
 // Run runs a [Machine] until interrupted or cancelled.

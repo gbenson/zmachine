@@ -3,6 +3,7 @@ package machine
 import (
 	"context"
 	"fmt"
+	"io"
 	"unsafe"
 )
 
@@ -10,6 +11,16 @@ type reader struct {
 	ctx     context.Context
 	source  AudioSource
 	metrics readerMetrics
+}
+
+// NewReader returns a new [io.Reader] reading from src.
+func NewReader(ctx context.Context, src AudioSource) io.ReadCloser {
+	if ctx == nil {
+		panic("nil context")
+	} else if src == nil {
+		panic("nil source")
+	}
+	return &reader{ctx: ctx, source: src}
 }
 
 // Read implements [io.Reader].
@@ -28,4 +39,10 @@ func (r *reader) Read(p []byte) (n int, err error) {
 
 	numSamples, err = r.source.Generate(r.ctx, buf)
 	return numSamples * 4, err
+}
+
+// Close implements [io.Closer].
+func (r *reader) Close() error {
+	defer func() { r.metrics.logReport(r.ctx) }()
+	return nil
 }
