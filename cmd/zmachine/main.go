@@ -25,12 +25,15 @@ func run(ctx context.Context) error {
 	}
 	defer sdl.Quit()
 
+	logger := log.DefaultLogger()
+	ctx = logger.WithContext(ctx)
+
 	m := zmachine.New()
+	ctx = m.WithContext(ctx)
 
 	m.Source = &generator{}
 	m.Sink = &zsdl.AudioSink{}
 
-	ctx = log.DefaultLogger().WithContext(ctx)
 	return zmachine.Run(ctx, m)
 }
 

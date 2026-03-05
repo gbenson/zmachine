@@ -46,6 +46,11 @@ type contextKey struct{}
 // be of type *Machine.
 var machineKey = &contextKey{}
 
+// WithContext returns a copy of ctx with the receiver attached.
+func (m *Machine) WithContext(ctx context.Context) context.Context {
+	return context.WithValue(ctx, machineKey, m)
+}
+
 // FromContext returns the [Machine] associated with ctx.
 // It panics if ctx has no associated machine.
 func FromContext(ctx context.Context) *Machine {
@@ -71,8 +76,8 @@ func (m *Machine) Start(ctx context.Context) error {
 		return errors.New("already started")
 	}
 
-	m.init(ctx)
-	ctx = m.ctx
+	ctx, m.stop = context.WithCancel(m.WithContext(ctx))
+	m.ctx = ctx
 
 	if src, ok := m.Source.(util.Starter); ok {
 		if err := util.LoggedStart(ctx, src); err != nil {
@@ -92,20 +97,11 @@ func (m *Machine) Start(ctx context.Context) error {
 	return nil
 }
 
-func (m *Machine) init(ctx context.Context) {
-	ctx = context.WithValue(ctx, machineKey, m)
-	ctx, m.stop = context.WithCancel(ctx)
-	m.ctx = ctx
-}
-
 // TestContext returns its receiver's context after associating a
 // [logger.Logger] and a semi-configured [Machine] with it.  It's
 // intended for use with [testing.T].
 func TestContext(t logger.Contexter) context.Context {
-	ctx := logger.TestContext(t)
-	m := New()
-	m.init(ctx)
-	return m.ctx
+	return New().WithContext(logger.TestContext(t))
 }
 
 // Close implements [io.Closer].
