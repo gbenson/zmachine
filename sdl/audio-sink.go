@@ -28,7 +28,7 @@ type AudioSink struct {
 	reader       io.Reader
 }
 
-// Start implements [machine.Sink].
+// Start implements [zmachine.AudioSink].
 func (sink *AudioSink) Start(ctx context.Context, r io.Reader) error {
 	sink.log = util.Logger(ctx, sink)
 	machine := zmachine.FromContext(ctx)

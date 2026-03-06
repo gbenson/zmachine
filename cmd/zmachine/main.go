@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"errors"
 	"os"
 	"os/signal"
 	"syscall"
@@ -49,10 +50,18 @@ func run(ctx context.Context) error {
 	r := zmachine.Open(ctx, g)
 	defer r.Close()
 
-	m.Source = r
-	m.Sink = &zsdl.AudioSink{}
+	sink := &zsdl.AudioSink{}
+	if err := sink.Start(ctx, r); err != nil {
+		return err
+	}
+	defer util.DeferableLoggedClose(ctx, sink)
 
-	return zmachine.Run(ctx, m)
+	<-ctx.Done()
+
+	if err := ctx.Err(); !errors.Is(err, context.Canceled) {
+		return err
+	}
+	return nil
 }
 
 type generator struct {
