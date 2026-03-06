@@ -11,3 +11,6 @@ const (
 	KHz = zmachine.KHz
 	BPM = zmachine.BPM
 )
+
+// A MIDISink is a component that receives MIDI messages.
+type MIDISink = zmachine.MIDISink

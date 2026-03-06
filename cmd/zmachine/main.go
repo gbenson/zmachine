@@ -66,14 +66,17 @@ func run(ctx context.Context) error {
 }
 
 type generator struct {
-	arp zm.TestArpeggiator
-	pa  zm.PhaseAccumulator
+	arp   zm.TestArpeggiator
+	voice zm.Voice
+	pa    zm.PhaseAccumulator
 
 	outputLevel float64
 }
 
 func (sg *generator) Start(ctx context.Context) error {
-	for _, s := range []util.Starter{&sg.arp, &sg.pa} {
+	sg.arp.Receiver = &sg.voice
+
+	for _, s := range []util.Starter{&sg.voice, &sg.arp, &sg.pa} {
 		if err := s.Start(ctx); err != nil {
 			return err
 		}
@@ -88,7 +91,7 @@ func (sg *generator) Generate(ctx context.Context, buf []float32) (int, error) {
 	for i := range buf {
 		sg.arp.Step()
 
-		sg.pa.SetFrequency(sg.arp.Frequency())
+		sg.pa.SetFrequency(sg.voice.Pitch())
 		sg.pa.Step()
 
 		output := sg.pa.Phase()*2 - 1
