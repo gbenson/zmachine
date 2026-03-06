@@ -30,6 +30,7 @@ func run(ctx context.Context) error {
 
 	logger := log.DefaultLogger()
 	ctx = logger.WithContext(ctx)
+	lc := util.NewLoggingCloser(ctx)
 
 	m := zmachine.New()
 	ctx = m.WithContext(ctx)
@@ -48,13 +49,13 @@ func run(ctx context.Context) error {
 	}
 
 	r := zmachine.Open(ctx, g)
-	defer r.Close()
+	defer lc.Close(r)
 
 	sink := &zsdl.AudioSink{}
 	if err := sink.Start(ctx, r); err != nil {
 		return err
 	}
-	defer util.DeferableLoggedClose(ctx, sink)
+	defer lc.Close(sink)
 
 	<-ctx.Done()
 
