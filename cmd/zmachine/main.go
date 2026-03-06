@@ -90,6 +90,7 @@ func (sg *generator) Start(ctx context.Context) error {
 func (sg *generator) Generate(ctx context.Context, buf []float32) (int, error) {
 	for i := range buf {
 		sg.arp.Step()
+		sg.voice.Step()
 
 		sg.pa.SetFrequency(sg.voice.Pitch())
 		sg.pa.Step()
