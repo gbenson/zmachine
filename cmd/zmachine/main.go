@@ -10,6 +10,7 @@ import (
 	"gbenson.net/go/logger/log"
 	"gbenson.net/go/zmachine"
 	zm "gbenson.net/go/zmachine/modules"
+	"gbenson.net/go/zmachine/modules/sid"
 	zsdl "gbenson.net/go/zmachine/sdl"
 	"gbenson.net/go/zmachine/util"
 	"github.com/veandco/go-sdl2/sdl"
@@ -69,19 +70,42 @@ type generator struct {
 	arp   zm.TestArpeggiator
 	voice zm.Voice
 	pa    zm.PhaseAccumulator
+	lfo0  zm.PhaseAccumulator
+	lfo1  zm.PhaseAccumulator
+	lfo2  zm.PhaseAccumulator
+	lfo3  zm.PhaseAccumulator
+	filt  sid.Filter
 
 	outputLevel float64
 }
 
 func (sg *generator) Start(ctx context.Context) error {
 	sg.arp.Receiver = &sg.voice
+	sg.filt.Model = sid.Model6581
 
-	for _, s := range []util.Starter{&sg.voice, &sg.arp, &sg.pa} {
+	for _, s := range []util.Starter{
+		&sg.voice,
+		&sg.arp,
+		&sg.pa,
+		&sg.lfo0,
+		&sg.lfo1,
+		&sg.lfo2,
+		&sg.lfo3,
+		&sg.filt,
+	} {
 		if err := s.Start(ctx); err != nil {
 			return err
 		}
 	}
 
+	const BPM = zmachine.BPM
+	const Hz = zmachine.Hz
+	sg.lfo0.SetFrequency(7 * BPM) // lfo1 (cutoff) variation
+	//sg.lfo1.SetFrequency(457 * Hz)  // cutoff
+	sg.lfo2.SetFrequency(17 * BPM) // res
+	sg.lfo3.SetFrequency(29 * BPM) // mode
+
+	sg.filt.SetFC(2000)
 	sg.outputLevel = 0.125 // approx -18dB; 7 on a 0..10 ↦ -60..0dB volume knob
 
 	return nil
@@ -95,7 +119,30 @@ func (sg *generator) Generate(ctx context.Context, buf []float32) (int, error) {
 		sg.pa.SetFrequency(sg.voice.Pitch())
 		sg.pa.Step()
 
-		output := sg.pa.Phase()*2 - 1
+		oscmix := sg.pa.Phase()*2 - 1 // sawtooth
+
+		sg.lfo0.Step()
+		sg.lfo1.SetFrequency(zmachine.Frequency(60/11 + sg.lfo0.Phase()*37))
+		sg.lfo1.Step() // cutoff
+		sg.lfo2.Step() // resonance
+		sg.lfo3.Step() // mode
+
+		sg.filt.SetFrequency(zmachine.Frequency(500 + 11500*sg.lfo1.Phase()))
+		sg.filt.SetResonance(sg.lfo2.Phase())
+
+		sg.filt.SetInput(oscmix)
+		sg.filt.Step()
+
+		var output float64
+		switch int(sg.lfo1.Phase() * 3) {
+		case 1:
+			output = sg.filt.BandPassOut()
+		case 2:
+			output = sg.filt.HighPassOut()
+		default:
+			output = sg.filt.LowPassOut()
+		}
+
 		output *= sg.outputLevel
 		buf[i] = float32(output)
 	}
