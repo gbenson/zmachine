@@ -3,8 +3,6 @@ package machine
 import (
 	"context"
 	"time"
-
-	"gbenson.net/go/logger"
 )
 
 const DefaultSampleRate Frequency = 48 * KHz
@@ -46,11 +44,4 @@ func FromContext(ctx context.Context) *Machine {
 		panic("nil machine")
 	}
 	return machine
-}
-
-// TestContext returns its receiver's context after associating a
-// [logger.Logger] and a semi-configured [Machine] with it.  It's
-// intended for use with [testing.T].
-func TestContext(t logger.Contexter) context.Context {
-	return New().WithContext(logger.TestContext(t))
 }

@@ -9,7 +9,7 @@ import (
 
 func TestVoice(t *testing.T) {
 	v := &Voice{}
-	assert.NilError(t, v.Start(testContext(t)))
+	StartForTest(t, v)
 
 	// nothing received, not stepped
 	assert.Equal(t, v.Pitch(), 0*Hz)

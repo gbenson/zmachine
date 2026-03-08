@@ -7,7 +7,7 @@ import (
 )
 
 func TestTestArpeggiatorTempo(t *testing.T) {
-	ctx := testContext(t)
+	ctx := TestContext(t)
 
 	ta := &TestArpeggiator{Receiver: &TestMIDISink{ctx}}
 	assert.NilError(t, ta.Start(ctx))

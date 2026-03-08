@@ -9,7 +9,7 @@ import (
 )
 
 func TestPhaseAccumulator(t *testing.T) {
-	ctx := testContext(t)
+	ctx := TestContext(t)
 	zmachine.FromContext(ctx).SampleRate = 25 * KHz
 
 	pa := PhaseAccumulator{}
@@ -58,7 +58,7 @@ func TestPhaseAccumulator(t *testing.T) {
 }
 
 func TestFrequencyClipping(t *testing.T) {
-	ctx := testContext(t)
+	ctx := TestContext(t)
 	zmachine.FromContext(ctx).SampleRate = Frequency(44100)
 
 	pa := &PhaseAccumulator{}
