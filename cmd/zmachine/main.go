@@ -70,12 +70,14 @@ func run(ctx context.Context) error {
 type generator struct {
 	arp   zm.TestArpeggiator
 	voice zm.Voice
-	pa    zm.PhaseAccumulator
-	lfo0  zm.PhaseAccumulator
+	osc1  zm.PhaseAccumulator
 	lfo1  zm.PhaseAccumulator
 	lfo2  zm.PhaseAccumulator
-	lfo3  zm.PhaseAccumulator
 	filt  sid.Filter
+
+	osc1shaper Shaper
+	lfo1shaper Shaper
+	lfo2shaper Shaper
 
 	outputLevel Fraction
 }
@@ -87,11 +89,9 @@ func (sg *generator) Start(ctx context.Context) error {
 	for _, s := range []util.Starter{
 		&sg.voice,
 		&sg.arp,
-		&sg.pa,
-		&sg.lfo0,
+		&sg.osc1,
 		&sg.lfo1,
 		&sg.lfo2,
-		&sg.lfo3,
 		&sg.filt,
 	} {
 		if err := s.Start(ctx); err != nil {
@@ -99,12 +99,18 @@ func (sg *generator) Start(ctx context.Context) error {
 		}
 	}
 
-	sg.lfo0.SetFrequency(7 * BPM) // lfo1 (cutoff) variation
-	//sg.lfo1.SetFrequency(457 * Hz)  // cutoff
-	sg.lfo2.SetFrequency(17 * BPM) // res
-	sg.lfo3.SetFrequency(29 * BPM) // mode
+	sg.osc1shaper = zm.RisingSawShaper
+
+	// LFO1 modulates cutoff
+	sg.lfo1.SetFrequency(11 * BPM)
+	sg.lfo1shaper = zm.SineShaper
+
+	// LFO2 modulates resonance
+	sg.lfo2.SetFrequency(97 * BPM)
+	sg.lfo2shaper = zm.TriangleShaper
 
 	sg.filt.SetFC(2000)
+
 	sg.outputLevel = 0.125 // approx -18dB; 7 on a 0..10 ↦ -60..0dB volume knob
 
 	return nil
@@ -115,32 +121,25 @@ func (sg *generator) Generate(ctx context.Context, buf []float32) (int, error) {
 		sg.arp.Step()
 		sg.voice.Step()
 
-		sg.pa.SetFrequency(sg.voice.Pitch())
-		sg.pa.Step()
+		sg.osc1.SetFrequency(sg.voice.Pitch())
+		sg.osc1.Step()
 
-		oscmix := Sample(sg.pa.Phase().Float64())*2 - 1 // sawtooth
+		oscmix := sg.osc1shaper.Sample(sg.osc1.Phase())
 
-		sg.lfo0.Step()
-		sg.lfo1.SetFrequency(Frequency(60/11 + sg.lfo0.Phase()*37))
-		sg.lfo1.Step() // cutoff
-		sg.lfo2.Step() // resonance
-		sg.lfo3.Step() // mode
+		// LFO1 modulates cutoff
+		sg.lfo1.Step()
+		sg.lfo2.Step()
 
-		sg.filt.SetFrequency(Frequency(500 + 11500*sg.lfo1.Phase()))
-		sg.filt.SetResonance(sg.lfo2.Phase())
+		lfo1val := sg.lfo1shaper.Fraction(sg.lfo1.Phase())
+		lfo2val := sg.lfo2shaper.Fraction(sg.lfo2.Phase())
+
+		sg.filt.SetFrequency(Frequency(500 + 11000*lfo1val.Float64()))
+		sg.filt.SetResonance(lfo2val)
 
 		sg.filt.SetInput(oscmix)
 		sg.filt.Step()
 
-		var output Sample
-		switch int(sg.lfo1.Phase() * 3) {
-		case 1:
-			output = sg.filt.BandPassOut()
-		case 2:
-			output = sg.filt.HighPassOut()
-		default:
-			output = sg.filt.LowPassOut()
-		}
+		output := sg.filt.LowPassOut()
 
 		output *= Sample(sg.outputLevel)
 		buf[i] = float32(output)

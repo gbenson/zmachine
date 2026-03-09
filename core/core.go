@@ -25,3 +25,14 @@ type MIDISink interface {
 	// Receive receives one MIDI message.
 	Receive(msg midi.Message)
 }
+
+// A Shaper samples a periodic waveform.
+type Shaper interface {
+	// Fraction returns the amplitude of its waveform at the given
+	// position in its cycle as a [Fraction].
+	Fraction(x Fraction) Fraction
+
+	// Sample returns the amplitude of its waveform at the given
+	// position in its cycle as a [Sample].
+	Sample(x Fraction) Sample
+}
