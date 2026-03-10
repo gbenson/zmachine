@@ -77,7 +77,7 @@ type generator struct {
 	lfo3  zm.PhaseAccumulator
 	filt  sid.Filter
 
-	outputLevel float64
+	outputLevel Fraction
 }
 
 func (sg *generator) Start(ctx context.Context) error {
@@ -118,7 +118,7 @@ func (sg *generator) Generate(ctx context.Context, buf []float32) (int, error) {
 		sg.pa.SetFrequency(sg.voice.Pitch())
 		sg.pa.Step()
 
-		oscmix := sg.pa.Phase().Float64()*2 - 1 // sawtooth
+		oscmix := Sample(sg.pa.Phase().Float64())*2 - 1 // sawtooth
 
 		sg.lfo0.Step()
 		sg.lfo1.SetFrequency(Frequency(60/11 + sg.lfo0.Phase()*37))
@@ -132,7 +132,7 @@ func (sg *generator) Generate(ctx context.Context, buf []float32) (int, error) {
 		sg.filt.SetInput(oscmix)
 		sg.filt.Step()
 
-		var output float64
+		var output Sample
 		switch int(sg.lfo1.Phase() * 3) {
 		case 1:
 			output = sg.filt.BandPassOut()
@@ -142,7 +142,7 @@ func (sg *generator) Generate(ctx context.Context, buf []float32) (int, error) {
 			output = sg.filt.LowPassOut()
 		}
 
-		output *= sg.outputLevel
+		output *= Sample(sg.outputLevel)
 		buf[i] = float32(output)
 	}
 	return len(buf), nil

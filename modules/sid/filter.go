@@ -87,12 +87,12 @@ func (f *Filter) setRES(res float64) {
 	f.damping = f.model.DampingForRES(res)
 }
 
-func (f *Filter) Input() float64 {
-	return f.input
+func (f *Filter) Input() Sample {
+	return Sample(f.input)
 }
 
-func (f *Filter) SetInput(v float64) {
-	f.input = v
+func (f *Filter) SetInput(s Sample) {
+	f.input = s.Float64()
 }
 
 func (f *Filter) Step() {
@@ -121,14 +121,14 @@ func (f *Filter) Step() {
 	f.bp = bp
 }
 
-func (f *Filter) LowPassOut() float64 {
-	return f.lp
+func (f *Filter) LowPassOut() Sample {
+	return Sample(f.lp)
 }
 
-func (f *Filter) HighPassOut() float64 {
-	return f.hp
+func (f *Filter) HighPassOut() Sample {
+	return Sample(f.hp)
 }
 
-func (f *Filter) BandPassOut() float64 {
-	return f.bp
+func (f *Filter) BandPassOut() Sample {
+	return Sample(f.bp)
 }
