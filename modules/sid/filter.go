@@ -4,6 +4,7 @@ import (
 	"context"
 
 	"gbenson.net/go/zmachine"
+	. "gbenson.net/go/zmachine/core"
 )
 
 type Filter struct {

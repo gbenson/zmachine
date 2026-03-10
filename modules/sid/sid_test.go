@@ -1,10 +1,5 @@
 package sid
 
-import (
-	"gbenson.net/go/zmachine"
-	"gbenson.net/go/zmachine/util/testutil"
-)
-
-const Hz = zmachine.Hz
+import "gbenson.net/go/zmachine/util/testutil"
 
 var StartForTest = testutil.StartForTest

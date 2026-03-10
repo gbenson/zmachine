@@ -32,6 +32,7 @@ import (
 	"sync/atomic"
 
 	"gbenson.net/go/logger"
+	. "gbenson.net/go/zmachine/core"
 	"gbenson.net/go/zmachine/util"
 	"gitlab.com/gomidi/midi/v2"
 )

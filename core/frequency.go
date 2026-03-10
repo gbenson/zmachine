@@ -1,9 +1,9 @@
-package machine
+package core
 
 // A Frequency is a float64 number of cycles per second.
 type Frequency float64
 
-// Frequently used units of frequency.
+// Common used units of frequency.
 const (
 	Hz  Frequency = 1
 	KHz           = 1000 * Hz

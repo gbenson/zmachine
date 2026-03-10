@@ -3,6 +3,8 @@ package machine
 import (
 	"context"
 	"time"
+
+	. "gbenson.net/go/zmachine/core"
 )
 
 const DefaultSampleRate Frequency = 48 * KHz

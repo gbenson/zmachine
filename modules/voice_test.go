@@ -3,6 +3,7 @@ package modules
 import (
 	"testing"
 
+	. "gbenson.net/go/zmachine/core"
 	"gitlab.com/gomidi/midi/v2"
 	"gotest.tools/v3/assert"
 )

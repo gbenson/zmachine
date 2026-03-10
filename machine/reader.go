@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"io"
 	"unsafe"
+
+	. "gbenson.net/go/zmachine/core"
 )
 
 type reader struct {

@@ -9,6 +9,7 @@ import (
 
 	"gbenson.net/go/logger/log"
 	"gbenson.net/go/zmachine"
+	. "gbenson.net/go/zmachine/core"
 	zm "gbenson.net/go/zmachine/modules"
 	"gbenson.net/go/zmachine/modules/sid"
 	zsdl "gbenson.net/go/zmachine/sdl"
@@ -98,8 +99,6 @@ func (sg *generator) Start(ctx context.Context) error {
 		}
 	}
 
-	const BPM = zmachine.BPM
-	const Hz = zmachine.Hz
 	sg.lfo0.SetFrequency(7 * BPM) // lfo1 (cutoff) variation
 	//sg.lfo1.SetFrequency(457 * Hz)  // cutoff
 	sg.lfo2.SetFrequency(17 * BPM) // res
@@ -122,12 +121,12 @@ func (sg *generator) Generate(ctx context.Context, buf []float32) (int, error) {
 		oscmix := sg.pa.Phase()*2 - 1 // sawtooth
 
 		sg.lfo0.Step()
-		sg.lfo1.SetFrequency(zmachine.Frequency(60/11 + sg.lfo0.Phase()*37))
+		sg.lfo1.SetFrequency(Frequency(60/11 + sg.lfo0.Phase()*37))
 		sg.lfo1.Step() // cutoff
 		sg.lfo2.Step() // resonance
 		sg.lfo3.Step() // mode
 
-		sg.filt.SetFrequency(zmachine.Frequency(500 + 11500*sg.lfo1.Phase()))
+		sg.filt.SetFrequency(Frequency(500 + 11500*sg.lfo1.Phase()))
 		sg.filt.SetResonance(sg.lfo2.Phase())
 
 		sg.filt.SetInput(oscmix)

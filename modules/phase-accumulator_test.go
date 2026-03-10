@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	"gbenson.net/go/zmachine"
+	. "gbenson.net/go/zmachine/core"
 	"gotest.tools/v3/assert"
 )
 

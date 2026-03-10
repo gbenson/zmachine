@@ -5,6 +5,7 @@ import (
 	"math"
 
 	"gbenson.net/go/zmachine"
+	. "gbenson.net/go/zmachine/core"
 )
 
 type PhaseAccumulator struct {

@@ -7,8 +7,3 @@
 // similar to _your_ browser-based SID synth then please get in touch so I
 // can properly credit you.
 package sid
-
-import "gbenson.net/go/zmachine"
-
-// A Frequency is a float64 number of cycles per second.
-type Frequency = zmachine.Frequency

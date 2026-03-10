@@ -3,6 +3,7 @@ package modules
 import (
 	"context"
 
+	. "gbenson.net/go/zmachine/core"
 	"gitlab.com/gomidi/midi/v2"
 )
 
