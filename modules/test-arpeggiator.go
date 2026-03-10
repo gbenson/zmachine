@@ -50,7 +50,7 @@ func (ta *TestArpeggiator) Step() {
 	ta.pa.Step()
 
 	notes := ta.notes
-	note := notes[int(ta.pa.Phase()*float64(len(ta.notes)))]
+	note := notes[int(ta.pa.Phase().Float64()*float64(len(ta.notes)))]
 
 	lastNote := ta.lastNote
 	if note == lastNote {

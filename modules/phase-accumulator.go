@@ -9,9 +9,9 @@ import (
 )
 
 type PhaseAccumulator struct {
-	timestep float64 // param: how much does time advance when we Step()?
-	incr     float64 // input: how much do we add to phase when we Step()
-	phase    float64 // output: the accumulated phase; range: [0..1)
+	timestep float64  // param: how much does time advance when we Step()?
+	incr     Fraction // input: how much do we add to phase when we Step()
+	phase    Fraction // output: the accumulated phase; range: [0..1)
 }
 
 // Start implements [zmachine.Starter].
@@ -22,7 +22,7 @@ func (pa *PhaseAccumulator) Start(ctx context.Context) error {
 }
 
 func (pa *PhaseAccumulator) Frequency() Frequency {
-	return Frequency(pa.incr / pa.timestep)
+	return Frequency(pa.incr.Float64() / pa.timestep)
 }
 
 func (pa *PhaseAccumulator) SetFrequency(f Frequency) {
@@ -42,10 +42,10 @@ func (pa *PhaseAccumulator) SetFrequency(f Frequency) {
 		}
 	}
 
-	pa.incr = incr
+	pa.incr = Fraction(incr)
 }
 
-func (pa *PhaseAccumulator) Phase() float64 {
+func (pa *PhaseAccumulator) Phase() Fraction {
 	return pa.phase
 }
 

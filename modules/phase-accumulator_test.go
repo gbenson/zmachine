@@ -15,47 +15,47 @@ func TestPhaseAccumulator(t *testing.T) {
 
 	pa := PhaseAccumulator{}
 	assert.Equal(t, pa.timestep, 0.0)
-	assert.Equal(t, pa.incr, 0.0)
-	assert.Equal(t, pa.Phase(), 0.0)
+	assert.Equal(t, pa.incr, Fraction(0))
+	assert.Equal(t, pa.Phase(), Fraction(0))
 
 	assert.NilError(t, pa.Start(ctx))
 	assert.Equal(t, pa.timestep, 40e-6)
-	assert.Equal(t, pa.incr, 0.0)
-	assert.Equal(t, pa.Phase(), 0.0)
+	assert.Equal(t, pa.incr, Fraction(0))
+	assert.Equal(t, pa.Phase(), Fraction(0))
 
 	pa.SetFrequency(440)
-	assert.Equal(t, pa.incr, 0.0176)
-	assert.Equal(t, pa.Phase(), 0.0) // unchanged
+	assert.Equal(t, pa.incr, Fraction(0.0176))
+	assert.Equal(t, pa.Phase(), Fraction(0)) // unchanged
 
 	pa.Step()
 	pa.Step()
-	assert.Equal(t, pa.Phase(), 0.0352)
+	assert.Equal(t, pa.Phase(), Fraction(0.0352))
 
 	pa.SetFrequency(100)
-	assert.Equal(t, pa.incr, 0.004)
-	assert.Equal(t, pa.Phase(), 0.0352) // unchanged
+	assert.Equal(t, pa.incr, Fraction(0.004))
+	assert.Equal(t, pa.Phase(), Fraction(0.0352)) // unchanged
 
 	pa.Step()
-	assert.Equal(t, pa.Phase(), 0.0392)
+	assert.Equal(t, pa.Phase(), Fraction(0.0392))
 
 	pa.Reset()
-	assert.Equal(t, pa.Phase(), 0.0)
-	assert.Equal(t, pa.incr, 0.004) // unchanged
+	assert.Equal(t, pa.Phase(), Fraction(0))
+	assert.Equal(t, pa.incr, Fraction(0.004)) // unchanged
 
 	pa.Step()
-	assert.Equal(t, pa.Phase(), 0.004)
-	assert.Equal(t, pa.incr, 0.004) // unchanged
+	assert.Equal(t, pa.Phase(), Fraction(0.004))
+	assert.Equal(t, pa.incr, Fraction(0.004)) // unchanged
 
-	assert.Equal(t, int(math.Round(pa.Phase()*1000)), 4)
+	assert.Equal(t, int(math.Round(pa.Phase().Float64()*1000)), 4)
 	for _ = range 248 {
 		pa.Step()
 	}
-	assert.Equal(t, int(math.Round(pa.Phase()*1000)), 996)
+	assert.Equal(t, int(math.Round(pa.Phase().Float64()*1000)), 996)
 
 	pa.Step()
-	assert.Equal(t, int(math.Round(pa.Phase()*1000)), 0)
+	assert.Equal(t, int(math.Round(pa.Phase().Float64()*1000)), 0)
 	pa.Step()
-	assert.Equal(t, int(math.Round(pa.Phase()*1000)), 4)
+	assert.Equal(t, int(math.Round(pa.Phase().Float64()*1000)), 4)
 }
 
 func TestFrequencyClipping(t *testing.T) {
@@ -65,7 +65,7 @@ func TestFrequencyClipping(t *testing.T) {
 	pa := &PhaseAccumulator{}
 	assert.NilError(t, pa.Start(ctx))
 
-	assert.Equal(t, pa.incr, 0.0)
+	assert.Equal(t, pa.incr, Fraction(0))
 
 	for _, tc := range []struct {
 		set, want int

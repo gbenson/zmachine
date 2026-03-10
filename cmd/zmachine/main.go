@@ -118,7 +118,7 @@ func (sg *generator) Generate(ctx context.Context, buf []float32) (int, error) {
 		sg.pa.SetFrequency(sg.voice.Pitch())
 		sg.pa.Step()
 
-		oscmix := sg.pa.Phase()*2 - 1 // sawtooth
+		oscmix := sg.pa.Phase().Float64()*2 - 1 // sawtooth
 
 		sg.lfo0.Step()
 		sg.lfo1.SetFrequency(Frequency(60/11 + sg.lfo0.Phase()*37))

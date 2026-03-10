@@ -66,12 +66,12 @@ func (f *Filter) SetFC(fc uint) {
 	f.w0 = f.cutoffTable[fc]
 }
 
-func (f *Filter) Resonance() float64 {
-	return f.resreg / 15
+func (f *Filter) Resonance() Fraction {
+	return Fraction(f.resreg / 15)
 }
 
-func (f *Filter) SetResonance(r float64) {
-	f.setRES(max(0, min(15, r*15)))
+func (f *Filter) SetResonance(r Fraction) {
+	f.setRES(r.Clamped() * 15)
 }
 
 func (f *Filter) RES() uint {
