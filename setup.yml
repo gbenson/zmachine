@@ -26,6 +26,7 @@
           - git
           - golang
           - libsdl2-dev
+          - tio
           - tmux
       become: yes
       tags:
