@@ -1,0 +1,8 @@
+---
+circuitpython_10_1_4:
+  download_url:
+    https://downloads.circuitpython.org/bin/raspberry_pi_pico/en_GB/adafruit-circuitpython-raspberry_pi_pico-en_GB-10.1.4.uf2
+  local_path:
+    /opt/firmware/adafruit-circuitpython-raspberry_pi_pico-en_GB-10.1.4.uf2
+  checksum:
+    sha256:adb3937fd96910313c7c413eca0874eb419b0b9b56fcb7e6184cdaab4a9c26b7

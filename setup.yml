@@ -1,5 +1,7 @@
 ---
 - hosts: all
+  vars_files:
+    - vars/firmware.yml
 
   tasks:
     - name: Unwanted packages are not installed
@@ -59,6 +61,19 @@
       loop:
         - /var/lib/man-db/auto-update
         - /var/swap
+      become: yes
+      tags:
+        - filesystem
+
+    - name: Required directories exist
+      ansible.builtin.file:
+        path: "{{ item }}"
+        state: directory
+        owner: root
+        group: root
+        mode: "0755"
+      loop:
+        - /opt/firmware
       become: yes
       tags:
         - filesystem
@@ -211,6 +226,17 @@
         src: /opt/ampy/bin/ampy
         dest: /usr/local/bin/ampy
         state: link
+      become: yes
+      tags:
+        - devel
+
+    - name: Required firmware is downloaded
+      ansible.builtin.get_url:
+        url: "{{ item['download_url'] }}"
+        dest: "{{ item['local_path'] }}"
+        checksum: "{{ item['checksum'] }}"
+      loop:
+        - "{{ circuitpython_10_1_4 }}"
       become: yes
       tags:
         - devel
