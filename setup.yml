@@ -28,6 +28,7 @@
           - libsdl2-dev
           - tio
           - tmux
+          - virtualenv
       become: yes
       tags:
         - packages
@@ -194,6 +195,23 @@
         src: ~/.gitconfig
         dest: ~/.gitconfig
         mode: "0644"
+      tags:
+        - devel
+
+    - name: Ampy is installed
+      ansible.builtin.pip:
+        name: adafruit-ampy
+        virtualenv: /opt/ampy
+      become: yes
+      tags:
+        - devel
+
+    - name: Ampy is configured
+      ansible.builtin.file:
+        src: /opt/ampy/bin/ampy
+        dest: /usr/local/bin/ampy
+        state: link
+      become: yes
       tags:
         - devel
 
