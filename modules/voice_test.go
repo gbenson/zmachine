@@ -14,21 +14,21 @@ func TestVoice(t *testing.T) {
 
 	// nothing received, not stepped
 	assert.Equal(t, v.Pitch(), 0*Hz)
-	assert.Equal(t, v.Velocity(), 0.0)
+	assert.Equal(t, v.Velocity(), Fraction(0))
 	assert.Equal(t, v.Gate(), false)
 
 	// note on received, not stepped
 	v.Receive(midi.NoteOn(0, 69-12, 123))
 
 	assert.Equal(t, v.Pitch(), 0*Hz)
-	assert.Equal(t, v.Velocity(), 0.0)
+	assert.Equal(t, v.Velocity(), Fraction(0))
 	assert.Equal(t, v.Gate(), false)
 
 	// received and stepped
 	v.Step()
 
 	assert.Equal(t, v.Pitch(), 220*Hz)
-	assert.Equal(t, v.Velocity(), 123.0/127)
+	assert.Equal(t, v.Velocity(), Fraction(123.0/127))
 	assert.Equal(t, v.Gate(), true)
 
 	// add a lower note (no change, higher note has priority)
@@ -36,7 +36,7 @@ func TestVoice(t *testing.T) {
 	v.Step()
 
 	assert.Equal(t, v.Pitch(), 220*Hz)
-	assert.Equal(t, v.Velocity(), 123.0/127)
+	assert.Equal(t, v.Velocity(), Fraction(123.0/127))
 	assert.Equal(t, v.Gate(), true)
 
 	// add a higher note (now we hears it)
@@ -44,7 +44,7 @@ func TestVoice(t *testing.T) {
 	v.Step()
 
 	assert.Equal(t, int(v.Pitch().Hz()), 261)
-	assert.Equal(t, v.Velocity(), 94.0/127)
+	assert.Equal(t, v.Velocity(), Fraction(94.0/127))
 	assert.Equal(t, v.Gate(), true)
 
 	// release the first note (no change, higher note still plays)
@@ -52,7 +52,7 @@ func TestVoice(t *testing.T) {
 	v.Step()
 
 	assert.Equal(t, int(v.Pitch().Hz()), 261)
-	assert.Equal(t, v.Velocity(), 94.0/127)
+	assert.Equal(t, v.Velocity(), Fraction(94.0/127))
 	assert.Equal(t, v.Gate(), true)
 
 	// release the playing note (finally we hear the low note)
@@ -60,7 +60,7 @@ func TestVoice(t *testing.T) {
 	v.Step()
 
 	assert.Equal(t, int(v.Pitch().Hz()), 130)
-	assert.Equal(t, v.Velocity(), 11.0/127)
+	assert.Equal(t, v.Velocity(), Fraction(11.0/127))
 	assert.Equal(t, v.Gate(), true)
 
 	// releasing non-playing notes has no effect
@@ -69,7 +69,7 @@ func TestVoice(t *testing.T) {
 		v.Step()
 
 		assert.Equal(t, int(v.Pitch().Hz()), 130)
-		assert.Equal(t, v.Velocity(), 11.0/127)
+		assert.Equal(t, v.Velocity(), Fraction(11.0/127))
 		assert.Equal(t, v.Gate(), true)
 	}
 
@@ -77,7 +77,7 @@ func TestVoice(t *testing.T) {
 	v.Receive(midi.NoteOn(0, 48, 0))
 	v.Step()
 
-	assert.Equal(t, int(v.Pitch().Hz()), 130) // floating
-	assert.Equal(t, v.Velocity(), 11.0/127)   // floating
+	assert.Equal(t, int(v.Pitch().Hz()), 130)         // floating
+	assert.Equal(t, v.Velocity(), Fraction(11.0/127)) // floating
 	assert.Equal(t, v.Gate(), false)
 }

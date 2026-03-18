@@ -60,7 +60,7 @@ type Voice struct {
 	//    the Step of the module the nested module is nested in.)
 	//  - some values are exposed (outside of Voice, via accessors).
 	pitch       Frequency
-	velocity    float64
+	velocity    Fraction
 	gate        bool
 	lastOutputs uintptr
 
@@ -148,7 +148,7 @@ func (v *Voice) Step() {
 	note := int(outs & 127)
 	v.pitch = Frequency(440 * math.Pow(2, float64(note-69)/12))
 
-	v.velocity = float64(int(outs>>8)) / 127
+	v.velocity = Fraction(float64(outs>>8) / 127)
 }
 
 // Pitch returns the frequency of the last played note.
@@ -156,8 +156,8 @@ func (v *Voice) Pitch() Frequency {
 	return v.pitch
 }
 
-// Velocity returns the velocity of the last played note as a 0..1 float64.
-func (v *Voice) Velocity() float64 {
+// Velocity returns the velocity of the last played note.
+func (v *Voice) Velocity() Fraction {
 	return v.velocity
 }
 
