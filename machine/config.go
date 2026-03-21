@@ -18,11 +18,32 @@ import (
 type Config struct {
 	Filename string      `toml:"-"`
 	Audio    AudioConfig `toml:"audio"`
+	UI       UIConfig    `toml:"ui"`
 }
 
 type AudioConfig struct {
 	SampleRate Frequency     `toml:"sample_rate"`
 	MaxLatency time.Duration `toml:"max_latency"`
+}
+
+type UIConfig struct {
+	Display DisplayConfig `toml:"display"`
+}
+
+type DisplayConfig struct {
+	Enabled bool          `toml:"enabled"`
+	Type    string        `toml:"type"`
+	Driver  string        `toml:"driver"`
+	Port    string        `toml:"port"`
+	SSD1305 SSD1305Config `toml:"ssd1305"`
+}
+
+type SSD1305Config struct {
+	DC       string `toml:"dc"`
+	RST      string `toml:"rst"`
+	Width    int    `toml:"width"`
+	Height   int    `toml:"height"`
+	StartCol int    `toml:"start_column"`
 }
 
 // ReadFile reads configuration from the default location.
@@ -125,4 +146,23 @@ func (c *AudioConfig) postInit() error {
 	}
 
 	return nil
+}
+
+// ApplyDefaults populates c with defaults from d.
+func (c *SSD1305Config) ApplyDefaults(d *SSD1305Config) {
+	if c.DC == "" {
+		c.DC = d.DC
+	}
+	if c.RST == "" {
+		c.RST = d.RST
+	}
+	if c.Width < 1 {
+		c.Width = d.Width
+	}
+	if c.Height < 1 {
+		c.Height = d.Height
+	}
+	if c.StartCol < 1 {
+		c.StartCol = d.StartCol
+	}
 }

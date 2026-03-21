@@ -14,6 +14,7 @@ import (
 	zm "gbenson.net/go/zmachine/modules"
 	"gbenson.net/go/zmachine/modules/sid"
 	zsdl "gbenson.net/go/zmachine/sdl"
+	zui "gbenson.net/go/zmachine/ui"
 	"gbenson.net/go/zmachine/util"
 	"github.com/veandco/go-sdl2/sdl"
 	"gitlab.com/gomidi/midi/v2/drivers/rtmididrv"
@@ -52,6 +53,12 @@ func run(ctx context.Context) error {
 	} else if f := m.Config.Filename; f != "" {
 		logger.Info().Str("config", f).Msg("Loaded")
 	}
+
+	ui := &zui.UI{}
+	if err := ui.Start(ctx); err != nil {
+		return err
+	}
+	defer ui.Stop(ctx)
 
 	drv, err := rtmididrv.New()
 	if err != nil {

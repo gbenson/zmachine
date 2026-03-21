@@ -114,6 +114,22 @@
       tags:
         - boot
 
+    - name: Zmachine is configured
+      ansible.builtin.copy:
+        dest: /boot/firmware/zmachine.toml
+        owner: root
+        group: root
+        mode: "0644"
+        content: |
+          [ui.display]
+          enabled = true
+          type = "waveshare_2in23_oled"
+          ssd1305.dc = "GPIO17"
+          ssd1305.rst = "GPIO16"
+      become: yes
+      tags:
+        - services
+
     - name: Service is configured
       ansible.builtin.copy:
         dest: /boot/firmware/zmachine.env
@@ -123,11 +139,12 @@
         content: |
           LOG_LEVEL=debug
           XDG_RUNTIME_DIR=/run/zmachine
+          ZMACHINE_CONFIG_TOML=/boot/firmware/zmachine.toml
       become: yes
       tags:
         - services
 
-    - name: Service is configured
+    - name: Service is installed
       ansible.builtin.copy:
         src: zmachine.service
         dest: /usr/lib/systemd/system/zmachine.service
@@ -164,5 +181,20 @@
         src: ~/.gitconfig
         dest: ~/.gitconfig
         mode: "0644"
+      tags:
+        - devel
+
+    - name: User Zmachine config directory exists
+      ansible.builtin.file:
+        path: ~/.config/zmachine
+        state: directory
+      tags:
+        - devel
+
+    - name: User Zmachine config symlink exists
+      ansible.builtin.file:
+        path: ~/.config/zmachine/config.toml
+        state: link
+        src: /boot/firmware/zmachine.toml
       tags:
         - devel
