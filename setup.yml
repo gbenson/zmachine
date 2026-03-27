@@ -62,6 +62,30 @@
         - filesystem
 
     - name: Bootloader is configured
+      ansible.builtin.lineinfile:
+        path: /boot/firmware/config.txt
+        regexp: '^\s*#?\s*{{ item }}'
+        line: "{{ item }}"
+      loop:
+        - dtparam=i2c_arm=on
+        - dtparam=i2s=on
+        - dtparam=spi=on
+      become: yes
+      tags:
+        - boot
+
+    - name: Bootloader is configured
+      ansible.builtin.lineinfile:
+        path: /boot/firmware/config.txt
+        regexp: '^\s*#?\s*{{ item }}'
+        line: "#{{ item }}"
+      loop:
+        - dtparam=audio=on
+      become: yes
+      tags:
+        - boot
+
+    - name: Bootloader is configured
       ansible.builtin.blockinfile:
         path: /boot/firmware/config.txt
         block: |
@@ -84,8 +108,8 @@
           # It also trims about half a second off the boot time.
           gpu_mem=16
 
-          # Enable SPI
-          dtparam=spi=on
+          # Enable I2S (PCM5102) audio
+          dtoverlay=hifiberry-dac
       become: yes
       tags:
         - boot
