@@ -1,0 +1,30 @@
+[Unit]
+Description=Zmachine service
+After=sound.target
+Wants=sound.target
+ConditionPathExists=/usr/bin/zmachine
+
+# Could maybe get the display up faster using `DefaultDependencies=no`
+# and moving us `After=local-fs.target`, but that adds complexity
+# (here, and in the Go code that'd have to poll for things appearing)
+# and would likely only gain ~0.5s on a Pi Zero 2:
+#
+#   systemd-analyze critical-chain local-fs.target
+#   ... local-fs.target @4.919s ...
+#   systemd-analyze critical-chain basic.target
+#   ... basic.target @5.291s ...
+#   systemd-analyze critical-chain sound.target
+#   ... sound.target @5.481s ...
+#
+# https://raspberrypi.stackexchange.com/a/77999
+# https://www.freedesktop.org/software/systemd/man/latest/bootup.html
+# https://www.man7.org/linux/man-pages/man5/systemd.service.5.html
+
+[Service]
+Type=exec
+EnvironmentFile=/boot/firmware/zmachine.env
+ExecStart=/usr/bin/zmachine
+Restart=always
+
+[Install]
+WantedBy=multi-user.target

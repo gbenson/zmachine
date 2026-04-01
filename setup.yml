@@ -114,6 +114,39 @@
       tags:
         - boot
 
+    - name: Service is configured
+      ansible.builtin.copy:
+        dest: /boot/firmware/zmachine.env
+        owner: root
+        group: root
+        mode: "0644"
+        content: |
+          LOG_LEVEL=debug
+          XDG_RUNTIME_DIR=/run/zmachine
+      become: yes
+      tags:
+        - services
+
+    - name: Service is configured
+      ansible.builtin.copy:
+        src: zmachine.service
+        dest: /usr/lib/systemd/system/zmachine.service
+        owner: root
+        group: root
+        mode: "0644"
+      become: yes
+      tags:
+        - services
+
+    - name: Service is enabled
+      ansible.builtin.systemd:
+        name: zmachine
+        enabled: yes
+        masked: no
+      become: yes
+      tags:
+        - services
+
     - name: Bash is configured
       ansible.builtin.copy:
         dest: ~/.bash_aliases
