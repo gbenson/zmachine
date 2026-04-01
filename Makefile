@@ -1,6 +1,8 @@
 all: build
 
-.PHONY: build check lint test run
+.PHONY: build check lint test run install
+
+build: zmachine
 
 check: test
 
@@ -13,6 +15,13 @@ test: lint
 
 run: check
 	go run ./cmd/zmachine
+
+zmachine: check
+	go build -o $@ ./cmd/zmachine
+
+install:
+	@bash escape-sudo.sh $(MAKE) zmachine
+	install -m755 zmachine /usr/bin
 
 coverage.html: coverage.out
 	go tool cover -html=$< -o $@
