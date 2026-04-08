@@ -17,7 +17,7 @@ type PhaseAccumulator struct {
 // Start implements [zmachine.Starter].
 func (pa *PhaseAccumulator) Start(ctx context.Context) error {
 	machine := zmachine.FromContext(ctx)
-	pa.timestep = machine.SampleRate.Period()
+	pa.timestep = machine.Config.Audio.SampleRate.Period()
 	return nil
 }
 

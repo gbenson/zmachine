@@ -4,6 +4,7 @@ go 1.26.0
 
 require (
 	gbenson.net/go/logger v1.6.0
+	github.com/BurntSushi/toml v1.6.0
 	github.com/veandco/go-sdl2 v0.4.40
 	gitlab.com/gomidi/midi/v2 v2.3.23
 	gotest.tools/v3 v3.5.2

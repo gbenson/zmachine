@@ -11,7 +11,7 @@ import (
 
 func TestPhaseAccumulator(t *testing.T) {
 	ctx := TestContext(t)
-	zmachine.FromContext(ctx).SampleRate = 25 * KHz
+	zmachine.FromContext(ctx).Config.Audio.SampleRate = 25 * KHz
 
 	pa := PhaseAccumulator{}
 	assert.Equal(t, pa.timestep, 0.0)
@@ -60,7 +60,7 @@ func TestPhaseAccumulator(t *testing.T) {
 
 func TestFrequencyClipping(t *testing.T) {
 	ctx := TestContext(t)
-	zmachine.FromContext(ctx).SampleRate = Frequency(44100)
+	zmachine.FromContext(ctx).Config.Audio.SampleRate = Frequency(44100)
 
 	pa := &PhaseAccumulator{}
 	assert.NilError(t, pa.Start(ctx))

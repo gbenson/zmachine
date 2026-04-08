@@ -39,7 +39,7 @@ func (f *Filter) Start(ctx context.Context) error {
 	}
 
 	machine := zmachine.FromContext(ctx)
-	f.sampleRate = machine.SampleRate
+	f.sampleRate = machine.Config.Audio.SampleRate
 
 	f.model.InitCutoffTable(f.cutoffTable[:], f.sampleRate.Hz())
 	f.inputBias = f.model.FilterInputBias()

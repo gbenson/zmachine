@@ -47,6 +47,12 @@ func run(ctx context.Context) error {
 	)
 	defer stop()
 
+	if err := m.Config.Read(); err != nil {
+		return err
+	} else if f := m.Config.Filename; f != "" {
+		logger.Info().Str("config", f).Msg("Loaded")
+	}
+
 	drv, err := rtmididrv.New()
 	if err != nil {
 		return err

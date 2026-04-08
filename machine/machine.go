@@ -12,16 +12,14 @@ const DefaultMaxLatency = 10 * time.Millisecond
 
 // A Machine manages a collection of components.
 type Machine struct {
-	SampleRate Frequency
-	MaxLatency time.Duration
+	Config Config
 }
 
 // New creates and initializes a new [Machine].
 func New() *Machine {
-	return &Machine{
-		SampleRate: DefaultSampleRate,
-		MaxLatency: DefaultMaxLatency,
-	}
+	m := &Machine{}
+	m.Config.postInit()
+	return m
 }
 
 // contextKey is a value for use with context.WithValue. It's used

@@ -34,8 +34,8 @@ func (sink *AudioSink) Start(ctx context.Context, r io.Reader) error {
 	machine := zmachine.FromContext(ctx)
 
 	deviceName := sink.DeviceName
-	sampleRate := machine.SampleRate
-	maxLatency := machine.MaxLatency
+	sampleRate := machine.Config.Audio.SampleRate
+	maxLatency := machine.Config.Audio.MaxLatency
 
 	// Calculate the maximum number of frames we can buffer without
 	// exceeding the required maximum latency at the requested sample
@@ -80,7 +80,7 @@ func (sink *AudioSink) Start(ctx context.Context, r io.Reader) error {
 		Uint8("channels", spec.Channels).
 		Uint16("bufsiz_frames", spec.Samples).
 		Uint32("bufsiz_bytes", spec.Size).
-		Msg("Using SDL audio")
+		Msg("Opened")
 
 	if spec.Format != sdl.AUDIO_F32SYS {
 		return fmt.Errorf("unexpected sample format 0x%x", spec.Format)
