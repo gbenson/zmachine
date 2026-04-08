@@ -7,7 +7,6 @@ import (
 	"periph.io/x/conn/v3/gpio/gpioreg"
 	"periph.io/x/conn/v3/spi"
 	"periph.io/x/conn/v3/spi/spireg"
-	"periph.io/x/devices/v3/ssd1306/image1bit"
 	"periph.io/x/host/v3"
 
 	"gbenson.net/go/ssd1305"
@@ -15,10 +14,6 @@ import (
 	"gbenson.net/go/zmachine/machine"
 	"gbenson.net/go/zmachine/ui/internal/ssd1305emu"
 	"gbenson.net/go/zmachine/util"
-
-	"golang.org/x/image/font"
-	"golang.org/x/image/font/basicfont"
-	"golang.org/x/image/math/fixed"
 )
 
 type Display struct {
@@ -29,14 +24,20 @@ type Display struct {
 
 	shouldClosePort   bool
 	shouldCloseDevice bool
+
+	Renderer *Renderer
+	Messages []string
 }
 
 func (d *Display) Start(ctx context.Context) error {
 	log := util.Logger(ctx, d)
 
-	if d.Device != nil {
-		log.Debug().Msg("Using supplied device")
+	if d.Renderer != nil {
+		log.Debug().Msg("Using supplied renderer")
 		return nil
+	} else if d.Device != nil {
+		log.Debug().Msg("Using supplied device")
+		return d.ensureRenderer(ctx)
 	}
 
 	c := d.Config
@@ -54,6 +55,7 @@ func (d *Display) Start(ctx context.Context) error {
 		d.ensureDrivers,
 		d.ensurePort,
 		d.ensureDevice,
+		d.ensureRenderer,
 	} {
 		if err := step(ctx); err != nil {
 			return err
@@ -61,22 +63,6 @@ func (d *Display) Start(ctx context.Context) error {
 	}
 
 	util.Logger(ctx, d).Info().Stringer("device", d.Device).Msg("Opened")
-
-	// XXX >>>>>
-	dev := d.Device
-	img := image1bit.NewVerticalLSB(dev.Bounds())
-	drawer := font.Drawer{
-		Src:  &image.Uniform{C: image1bit.On},
-		Dst:  img,
-		Face: basicfont.Face7x13,
-		Dot:  fixed.P(0, 12),
-	}
-	drawer.DrawString("Hello world!")
-	if err := dev.Draw(dev.Bounds(), img, image.Point{}); err != nil {
-		util.Logger(ctx, d).Warn().Err(err).Msg("")
-	}
-	// <<<<< XXX
-
 	return nil
 }
 
@@ -186,4 +172,25 @@ func (d *Display) ensureDevice(ctx context.Context) error {
 	d.shouldCloseDevice = true
 
 	return nil
+}
+
+func (d *Display) ensureRenderer(ctx context.Context) error {
+	d.Renderer = NewRenderer(d.Device)
+	return nil
+}
+
+func (d *Display) PushMessage(msg string) {
+	r := d.Renderer
+	numlines := r.Height / r.FontHeight
+	msgs := append(d.Messages, msg)
+	drop := len(msgs) - numlines
+	if drop > 0 {
+		msgs = msgs[drop:]
+		r.Clear()
+	}
+	d.Messages = msgs
+	for i, msg := range msgs {
+		r.DrawText(image.Point{0, i * r.FontHeight}, msg)
+	}
+	r.Present()
 }

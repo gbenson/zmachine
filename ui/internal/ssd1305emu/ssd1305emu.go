@@ -34,9 +34,9 @@ type Registers struct {
 
 // Close implements [io.Closer].
 func (p *Port) Close() error {
-	if w := p.window; w != nil {
-		defer w.Destroy()
-	}
+	defer loggedDestroy(&p.Logger, p.window)
+	defer loggedDestroy(&p.Logger, p.renderer)
+
 	return nil
 }
 

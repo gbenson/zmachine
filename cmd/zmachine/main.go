@@ -28,18 +28,33 @@ func main() {
 }
 
 func run(ctx context.Context) error {
-	if err := sdl.Init(sdl.INIT_EVERYTHING); err != nil {
-		return err
-	}
-	defer sdl.Quit()
+	// Set up logging before anything else.
+	lw := log.DefaultWriter()
+	lf := zui.NewLogFollower(lw)
+	log.DefaultLoggerOptions.Writer = lf
 
 	logger := log.DefaultLogger()
+
+	logger.Info().Str("comp", "zmachine").Msg("Starting")
+	defer func() { logger.Info().Str("comp", "zmachine").Msg("Stopped") }()
+
 	ctx = logger.WithContext(ctx)
 	lc := util.NewLoggingCloser(ctx)
+	defer lc.Close(lf)
 
+	// Create the machine, and read any config file.
 	m := zmachine.New()
 	ctx = m.WithContext(ctx)
 
+	if err := m.Config.Read(); err != nil {
+		return err
+	} else if f := m.Config.Filename; f != "" {
+		util.Logger(ctx, m.Config).Info().Str("file", f).Msg("Loaded")
+	}
+
+	// Set up signal handling before doing anything needing cleanup.
+	// Everything after this point will have its context canceled on
+	// any listed signal (or if this function returns.)
 	ctx, stop := signal.NotifyContext(
 		ctx,
 		syscall.SIGHUP,
@@ -48,17 +63,25 @@ func run(ctx context.Context) error {
 	)
 	defer stop()
 
-	if err := m.Config.Read(); err != nil {
-		return err
-	} else if f := m.Config.Filename; f != "" {
-		logger.Info().Str("config", f).Msg("Loaded")
-	}
-
+	// Start the UI so we can log progress while everything initializes.
 	ui := &zui.UI{}
+	ui.Follow(lf)
 	if err := ui.Start(ctx); err != nil {
 		return err
 	}
 	defer ui.Stop(ctx)
+
+	if sdl.WasInit(sdl.INIT_AUDIO) == 0 {
+		log := util.Logger(ctx, "sdl.Audio")
+		log.Debug().Msg("Starting")
+
+		if err := sdl.InitSubSystem(sdl.INIT_AUDIO); err != nil {
+			return err
+		}
+		defer sdl.QuitSubSystem(sdl.INIT_AUDIO)
+
+		log.Info().Msg("Started")
+	}
 
 	drv, err := rtmididrv.New()
 	if err != nil {
@@ -89,6 +112,7 @@ func run(ctx context.Context) error {
 	}
 	defer lc.Close(sink)
 
+	logger.Info().Msg("Startup complete")
 	<-ctx.Done()
 
 	if err := ctx.Err(); !errors.Is(err, context.Canceled) {
