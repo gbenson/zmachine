@@ -32,6 +32,9 @@ func run(ctx context.Context) error {
 	lw := log.DefaultWriter()
 	lf := zui.NewLogFollower(lw)
 	log.DefaultLoggerOptions.Writer = lf
+	ui := &zui.UI{}
+	ui.Follow(lf)
+	defer ui.Stop(ctx)
 
 	logger := log.DefaultLogger()
 
@@ -64,23 +67,20 @@ func run(ctx context.Context) error {
 	defer stop()
 
 	// Start the UI so we can log progress while everything initializes.
-	ui := &zui.UI{}
-	ui.Follow(lf)
 	if err := ui.Start(ctx); err != nil {
 		return err
 	}
-	defer ui.Stop(ctx)
 
 	if sdl.WasInit(sdl.INIT_AUDIO) == 0 {
 		log := util.Logger(ctx, "sdl.Audio")
-		log.Debug().Msg("Starting")
+		log.Debug().Msg("Initializing")
 
 		if err := sdl.InitSubSystem(sdl.INIT_AUDIO); err != nil {
 			return err
 		}
 		defer sdl.QuitSubSystem(sdl.INIT_AUDIO)
 
-		log.Info().Msg("Started")
+		log.Info().Msg("Initialized")
 	}
 
 	drv, err := rtmididrv.New()
@@ -112,7 +112,6 @@ func run(ctx context.Context) error {
 	}
 	defer lc.Close(sink)
 
-	logger.Info().Msg("Startup complete")
 	<-ctx.Done()
 
 	if err := ctx.Err(); !errors.Is(err, context.Canceled) {

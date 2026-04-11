@@ -4,15 +4,18 @@ import (
 	"context"
 	"fmt"
 	"io"
+	"sync"
 	"unsafe"
 
 	. "gbenson.net/go/zmachine/core"
+	"gbenson.net/go/zmachine/util"
 )
 
 type reader struct {
 	ctx     context.Context
 	source  AudioSource
 	metrics readerMetrics
+	onRead  func()
 }
 
 // NewReader returns a new [io.Reader] reading from src.
@@ -22,12 +25,20 @@ func NewReader(ctx context.Context, src AudioSource) io.ReadCloser {
 	} else if src == nil {
 		panic("nil source")
 	}
-	return &reader{ctx: ctx, source: src}
+
+	return &reader{
+		ctx:    ctx,
+		source: src,
+		onRead: sync.OnceFunc(func() {
+			util.Logger(ctx, "zmachine").Info().Msg("Running")
+		}),
+	}
 }
 
 // Read implements [io.Reader].
 func (r *reader) Read(p []byte) (n int, err error) {
 	r.metrics.setWorking()
+	r.onRead()
 	defer r.metrics.setIdle()
 
 	sizeBytes := len(p)

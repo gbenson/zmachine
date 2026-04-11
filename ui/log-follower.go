@@ -3,6 +3,7 @@ package ui
 import (
 	"fmt"
 	"io"
+	"strings"
 
 	"gbenson.net/go/zmachine/ui/internal/logfollower"
 )
@@ -16,19 +17,28 @@ type logRecord struct {
 	Level     string `json:"level"`
 	Message   string `json:"message"`
 	Component string `json:"comp"`
+	Source    string `json:"source"`
 }
 
 func (r *logRecord) ShortString() string {
-	return shortString(r.Level, r.Message, r.Component)
+	return shortString(r.Level, r.Message, r.Component, r.Source)
 }
 
-func shortString(l, m, c string) string {
+func shortString(l, m, c, s string) string {
 	// fast path for normal operation
 	if l == "info" && m != "" {
-		if c == "" {
+		switch c {
+		case "":
 			return m
+		case "midi.Follower":
+			switch s {
+			case "Midi Through":
+				return ""
+			default:
+				c = s
+			}
 		}
-		return fmt.Sprintf("%s %s", m, c)
+		return fmt.Sprintf("%s: %s", c, strings.ToLower(m))
 	}
 
 	// non-normal messages

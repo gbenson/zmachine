@@ -45,16 +45,13 @@ func (ui *UI) Follow(es any) {
 
 // onLogRecord is called whenever a message is logged at info level or higher.
 func (ui *UI) onLogRecord(rr *logfollower.Record) {
-	if ui.Display.Device == nil {
-		return
-	}
-
 	var r logRecord
 	if err := json.Unmarshal([]byte(rr.Payload), &r); err != nil {
 		r.Level = "error"
 		r.Component = "ui.LogFollower"
 		r.Message = err.Error()
 	}
-
-	ui.Display.PushMessage(r.ShortString())
+	if msg := r.ShortString(); msg != "" {
+		ui.Display.PushMessage(msg)
+	}
 }

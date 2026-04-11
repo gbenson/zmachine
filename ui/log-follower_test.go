@@ -8,10 +8,12 @@ import (
 
 func TestShortString(t *testing.T) {
 	for _, tc := range []struct {
-		l, m, c, want string
+		l, m, c, s, want string
 	}{
-		{"info", "Blew", "ui.Trumpet", "Blew ui.Trumpet"},
+		{"info", "Blown", "ui.Trumpet", "", "ui.Trumpet: blown"},
+		{"info", "Seen", "midi.Follower", "fancy kbd", "fancy kbd: seen"},
+		{"info", "Seen", "midi.Follower", "Midi Through", ""},
 	} {
-		assert.Equal(t, shortString(tc.l, tc.m, tc.c), tc.want)
+		assert.Equal(t, shortString(tc.l, tc.m, tc.c, tc.s), tc.want)
 	}
 }

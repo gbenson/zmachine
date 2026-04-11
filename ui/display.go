@@ -3,6 +3,7 @@ package ui
 import (
 	"context"
 	"image"
+	"sync"
 
 	"periph.io/x/conn/v3/gpio/gpioreg"
 	"periph.io/x/conn/v3/spi"
@@ -27,6 +28,8 @@ type Display struct {
 
 	Renderer *Renderer
 	Messages []string
+
+	pmMu sync.Mutex
 }
 
 func (d *Display) Start(ctx context.Context) error {
@@ -62,7 +65,7 @@ func (d *Display) Start(ctx context.Context) error {
 		}
 	}
 
-	util.Logger(ctx, d).Info().Stringer("device", d.Device).Msg("Opened")
+	log.Info().Stringer("device", d.Device).Msg("Opened")
 	return nil
 }
 
@@ -180,17 +183,24 @@ func (d *Display) ensureRenderer(ctx context.Context) error {
 }
 
 func (d *Display) PushMessage(msg string) {
-	r := d.Renderer
-	numlines := r.Height / r.FontHeight
+	d.pmMu.Lock()
+	defer d.pmMu.Unlock()
+
 	msgs := append(d.Messages, msg)
-	drop := len(msgs) - numlines
-	if drop > 0 {
-		msgs = msgs[drop:]
-		r.Clear()
-	}
 	d.Messages = msgs
-	for i, msg := range msgs {
-		r.DrawText(image.Point{0, i * r.FontHeight}, msg)
+
+	r := d.Renderer
+	if r == nil {
+		return
+	}
+
+	if offset := len(msgs) - r.Rows(); offset > 0 {
+		msgs = msgs[offset:]
+	}
+
+	r.Clear()
+	for row, msg := range msgs {
+		r.DrawText(image.Point{0, row * r.FontHeight}, msg)
 	}
 	r.Present()
 }

@@ -41,7 +41,7 @@ func NewRenderer(target display.Drawer) *Renderer {
 		Width:  bounds.Dx(),
 		Height: bounds.Dy(),
 	}
-	r.SetFont(microfont.Face04B08)
+	r.SetFont(microfont.Face04B03)
 
 	return r
 }
@@ -51,6 +51,12 @@ func (r *Renderer) SetFont(f font.Face) {
 	r.fontDrawer.Face = f
 	r.fontAscent = m.Ascent.Round()
 	r.FontHeight = m.Height.Round()
+}
+
+// Return the number of rows of text that may be displayed with the
+// current font.
+func (r *Renderer) Rows() int {
+	return r.Height / r.FontHeight
 }
 
 func (r *Renderer) Clear() {

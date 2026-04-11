@@ -74,7 +74,10 @@ func (f *Follower) receive(r *Record) {
 // follow forwards received records.
 func (f *Follower) follow() {
 	for r := range f.ch {
-		f.forward(r)
+		// Forwarding each record from its own goroutine avoids
+		// deadlocking if anything called by the forwarder logs
+		// a message.
+		f.wg.Go(func() { f.forward(r) })
 	}
 }
 

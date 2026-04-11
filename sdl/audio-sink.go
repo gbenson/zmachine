@@ -80,7 +80,7 @@ func (sink *AudioSink) Start(ctx context.Context, r io.Reader) error {
 		Uint8("channels", spec.Channels).
 		Uint16("bufsiz_frames", spec.Samples).
 		Uint32("bufsiz_bytes", spec.Size).
-		Msg("Opened")
+		Msg("Started")
 
 	if spec.Format != sdl.AUDIO_F32SYS {
 		return fmt.Errorf("unexpected sample format 0x%x", spec.Format)
