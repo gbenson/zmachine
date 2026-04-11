@@ -30,7 +30,7 @@ class Encoder:
             print(f"encoder[{self.number}].switch = {switch}")
             self.lastsw = switch
             anychange = True
-        return switch
+        return anychange
 
 
 def main():
