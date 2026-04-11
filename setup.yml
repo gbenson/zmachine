@@ -114,6 +114,18 @@
       tags:
         - boot
 
+    - name: I2C is configured
+      ansible.builtin.copy:
+        dest: /etc/modules-load.d/zmachine.conf
+        owner: root
+        group: root
+        mode: "0644"
+        content: |
+          i2c-dev
+      become: yes
+      tags:
+        - boot
+
     - name: Zmachine is configured
       ansible.builtin.copy:
         dest: /boot/firmware/zmachine.toml
