@@ -135,7 +135,7 @@ func (f *Follower) poll(ctx context.Context) error {
 			continue
 		}
 
-		p := &port{follower: f, port: in, lastSeen: thisPoll}
+		p := &port{follower: f, in: in, lastSeen: thisPoll}
 		if err := p.start(ctx); err != nil {
 			logger.Ctx(p.ctx).Warn().
 				Err(err).
@@ -164,7 +164,7 @@ func (f *Follower) poll(ctx context.Context) error {
 type port struct {
 	ctx      context.Context
 	follower *Follower
-	port     drivers.In
+	in       drivers.In
 	name     string
 	lastSeen uintptr
 	stop     func()
@@ -201,24 +201,23 @@ func (p *port) start(ctx context.Context) error {
 	p.ctx = ctx
 	ctx = nil // crowbar
 
-	in := p.port
-	p.setName(in.String())
+	p.setName(p.in.String())
 
 	log := logger.Ctx(p.ctx).With().
-		Int("midi_port", in.Number()).
+		Int("midi_port", p.in.Number()).
 		Str("source", p.name).
 		Logger()
 	p.ctx = log.WithContext(p.ctx)
 
 	log.Debug().Msg("Opening")
-	if err := in.Open(); err != nil {
+	if err := p.in.Open(); err != nil {
 		return err
 	}
 
 	p.ctx, p.stop = context.WithCancel(p.ctx)
 	p.follower.wg.Go(func() {
 		defer func() { log.Info().Msg("Closed") }()
-		defer util.LoggedClose(p.ctx, in)
+		defer util.LoggedClose(p.ctx, p.in)
 		defer p.stop()
 		if err := p.listen(); err != nil {
 			log.Err(err).Msg("")
@@ -230,7 +229,7 @@ func (p *port) start(ctx context.Context) error {
 
 func (p *port) listen() error {
 	stop, err := midi.ListenTo(
-		p.port,
+		p.in,
 		p.receiveMessage,
 		midi.HandleError(p.receiveError),
 	)
