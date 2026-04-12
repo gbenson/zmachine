@@ -5,6 +5,7 @@ import (
 	"io"
 	"strings"
 
+	"gbenson.net/go/zmachine/midi"
 	"gbenson.net/go/zmachine/ui/internal/logfollower"
 )
 
@@ -34,6 +35,8 @@ func shortString(l, m, c, s string) string {
 			switch s {
 			case "Midi Through":
 				return ""
+			case midi.ControlSurfaceName:
+				c = "ui.Surface"
 			default:
 				c = s
 			}

@@ -177,7 +177,17 @@ var portNameRx = regexp.MustCompile(
 		`(?P<alsa_port_number>\d+)$`,
 )
 
+const (
+	controlSurfaceVendorID  = "Zmachine"        // USB vendor ID
+	controlSurfaceProductID = "Control Surface" // USB product ID
+	controlSurfacePortID    = "ZMCS"            // USB MIDI port
+
+	ControlSurfaceName = controlSurfaceVendorID + " " + controlSurfaceProductID
+)
+
 func (p *port) setName(name string) {
+	p.name = name
+
 	// RtMidi port names be like:
 	//  - "Midi Through:Midi Through Port-0 14:0"
 	//  - "MPK mini Play mk3:MPK mini Play mk3 MIDI 1 20:0"
@@ -194,6 +204,14 @@ func (p *port) setName(name string) {
 		}
 	}
 
+	if name == ControlSurfaceName {
+		name = p.name // don't get spoofed!
+	} else if name == controlSurfaceProductID {
+		if strings.Contains(p.name, controlSurfacePortID) {
+			name = ControlSurfaceName
+		}
+	}
+
 	p.name = name
 }
 
@@ -204,7 +222,6 @@ func (p *port) start(ctx context.Context) error {
 	p.setName(p.in.String())
 
 	log := logger.Ctx(p.ctx).With().
-		Int("midi_port", p.in.Number()).
 		Str("source", p.name).
 		Logger()
 	p.ctx = log.WithContext(p.ctx)
@@ -242,6 +259,10 @@ func (p *port) listen() error {
 	log := logger.Ctx(ctx)
 	log.Info().Msg("Opened")
 
+	if p.name == ControlSurfaceName {
+		p.tryResetSurface()
+	}
+
 	// I tried calling midi.ListenTo from the follower, but it didn't
 	// receive messages and then segfaulted when the process exited,
 	// so this does have to be in its own goroutine, with rtmididrv at
@@ -252,6 +273,47 @@ func (p *port) listen() error {
 	<-ctx.Done()
 
 	log.Debug().Str("reason", ctx.Err().Error()).Msg("Listener stopping")
+	return nil
+}
+
+func (p *port) tryResetSurface() {
+	f := p.follower
+	ctx := p.ctx
+	log := logger.Ctx(ctx).With().Logger()
+	log.UpdateContext(func(c logger.Context) logger.Context {
+		return c.Reset().
+			Stringer("driver", f.Driver).
+			Str("target", p.name)
+	})
+	ctx = log.WithContext(ctx)
+
+	if err := f.resetSurface(ctx, p.in.String()); err != nil {
+		util.Logger(ctx, f).Warn().
+			Err(err).
+			Msg("Control surface reset failed")
+	}
+}
+
+func (f *Follower) resetSurface(ctx context.Context, name string) error {
+	out, err := outByName(f.Driver, name)
+	if err != nil {
+		return err
+	}
+
+	log := util.Logger(ctx, f)
+	log.Debug().Msg("Opening")
+
+	if err := out.Open(); err != nil {
+		return err
+	}
+	defer util.LoggedClose(ctx, out)
+	log.Debug().Msg("Opened")
+
+	if err := out.Send(midi.Reset()); err != nil {
+		return err
+	}
+
+	log.Debug().Msg("Reset sent")
 	return nil
 }
 
