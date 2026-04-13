@@ -59,6 +59,7 @@
         path: "{{ item }}"
         state: absent
       loop:
+        - /etc/modules-load.d/zmachine.conf
         - /var/lib/man-db/auto-update
         - /var/swap
       become: yes
@@ -84,7 +85,6 @@
         regexp: '^\s*#?\s*{{ item }}'
         line: "{{ item }}"
       loop:
-        - dtparam=i2c_arm=on
         - dtparam=i2s=on
         - dtparam=spi=on
       become: yes
@@ -97,6 +97,7 @@
         regexp: '^\s*#?\s*{{ item }}'
         line: "#{{ item }}"
       loop:
+        - dtparam=i2c_arm=on
         - dtparam=audio=on
       become: yes
       tags:
@@ -127,18 +128,6 @@
 
           # Enable I2S (PCM5102) audio
           dtoverlay=hifiberry-dac
-      become: yes
-      tags:
-        - boot
-
-    - name: I2C is configured
-      ansible.builtin.copy:
-        dest: /etc/modules-load.d/zmachine.conf
-        owner: root
-        group: root
-        mode: "0644"
-        content: |
-          i2c-dev
       become: yes
       tags:
         - boot
