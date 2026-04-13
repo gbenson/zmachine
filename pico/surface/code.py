@@ -1,15 +1,36 @@
 import board
 import time
 
+from adafruit_midi import MIDI
+from adafruit_midi.control_change import ControlChange
 from digitalio import DigitalInOut, Direction, Pull
 from rotaryio import IncrementalEncoder
+from usb_midi import PortIn, PortOut, ports
 
 led = DigitalInOut(board.LED)
 led.direction = Direction.OUTPUT
 
+midi_ins = [
+    MIDI(midi_in=port)
+    for port in ports
+    if isinstance(port, PortIn)
+]
+midi_outs = [
+    MIDI(midi_out=port, out_channel=15)
+    for port in ports
+    if isinstance(port, PortOut)
+]
+
+def send_midi(msg):
+    for port in midi_outs:
+        port.send(msg)
+
 
 class Encoder:
     def __init__(self, n, *pins):
+        if n < 0 or n >= 16:
+            # cc number calculations assume 0 <= n < 16
+            raise NotImplementedError(n)
         self.number = n
         a, b, s = [getattr(board, f"GP{n}") for n in pins]
         self.encoder = IncrementalEncoder(a, b)
@@ -20,16 +41,25 @@ class Encoder:
 
     def update(self):
         anychange = False
+
         pos = self.encoder.position
-        if pos != self.lastpos:
+        if (delta := pos - self.lastpos):
             print(f"encoder[{self.number}].position = {pos}")
+            control = self.number + 16  # 16..31 inclusive
+            value = max(0, min(127, delta+64))
+            send_midi(ControlChange(control, value))
             self.lastpos = pos
             anychange = True
+
         switch = self.switch.value
         if switch != self.lastsw:
             print(f"encoder[{self.number}].switch = {switch}")
+            control = self.number + 104  # 104..119 inclusive
+            value = 127 if switch else 0
+            send_midi(ControlChange(control, value))
             self.lastsw = switch
             anychange = True
+
         return anychange
 
 
