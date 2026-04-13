@@ -99,6 +99,10 @@
       loop:
         - dtparam=i2c_arm=on
         - dtparam=audio=on
+        - camera_auto_detect=1
+        - display_auto_detect=1
+        - dtoverlay=vc4-kms-v3d
+        - max_framebuffers=2
       become: yes
       tags:
         - boot
