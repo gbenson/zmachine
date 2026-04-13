@@ -4,6 +4,7 @@ import time
 from adafruit_midi import MIDI
 from adafruit_midi.control_change import ControlChange
 from adafruit_midi.control_change_values import VOLUME
+from adafruit_midi.midi_reset import Reset
 from analogio import AnalogIn
 from digitalio import DigitalInOut, Direction, Pull
 from rotaryio import IncrementalEncoder
@@ -84,13 +85,15 @@ class Potentiometer:
         if abs(val - self.lastval) < self.squelch:
             return False
         print(f"potentiometer[{self.cc_msb}].value = {val}")
-
-        send_midi(ControlChange(self.cc_msb, (val >> 7) & 127))
-        if (cc_lsb := self.cc_lsb) is not None:
-            send_midi(ControlChange(cc_lsb, val & 127))
-
+        self.send_value(val)
         self.lastval = val
         return True
+
+    def send_value(self, value):
+        send_midi(ControlChange(self.cc_msb, (value >> 7) & 127))
+        if (cc_lsb := self.cc_lsb) is None:
+            return
+        send_midi(ControlChange(cc_lsb, value & 127))
 
 
 def main():
@@ -110,6 +113,13 @@ def main():
 
     blink_ticks = 0
     while True:
+        for port in midi_ins:
+            while (msg := port.receive()):
+                print("reset!")
+                if isinstance(msg, Reset):
+                    for p in pots:
+                        p.send_value(p.lastval)
+
         anychange = False
         for p in pots:
             if p.update():
