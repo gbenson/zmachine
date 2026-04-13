@@ -108,6 +108,7 @@ def main():
         ))
     ]
 
+    blink_ticks = 0
     while True:
         anychange = False
         for p in pots:
@@ -116,8 +117,16 @@ def main():
         for e in encoders:
             if e.update():
                 anychange = True
-        led.value = anychange
-        time.sleep(0.001)  # XXX maybe?
+
+        if anychange:
+            blink_ticks = 20
+            led.value = False
+        elif blink_ticks > 0:
+            blink_ticks -= 1
+        else:
+            led.value = True
+
+        time.sleep(0.001)
 
 
 if __name__ == "__main__":
