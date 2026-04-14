@@ -2,6 +2,7 @@ package ssd1305emu
 
 import (
 	"bytes"
+	"context"
 	"fmt"
 
 	"periph.io/x/conn/v3/gpio"
@@ -17,9 +18,9 @@ const MaxWidth = 132
 const MaxHeight = 64
 
 type Port struct {
-	DC, RST PinOut
+	dc, rst PinOut
 
-	Logger logger.Logger
+	logger logger.Logger
 	regs   Registers
 	pixels []byte
 
@@ -32,12 +33,27 @@ type Registers struct {
 	Column int
 }
 
+func NewSPI(ctx context.Context) (*Port, error) {
+	// [ ] set DC name
+	// [ ] set RST name
+	// [ ] set Logger
+	panic("ssd1305.NewSPI: not implemented")
+}
+
 // Close implements [io.Closer].
 func (p *Port) Close() error {
-	defer loggedDestroy(&p.Logger, p.window)
-	defer loggedDestroy(&p.Logger, p.renderer)
+	defer loggedDestroy(&p.logger, p.window)
+	defer loggedDestroy(&p.logger, p.renderer)
 
 	return nil
+}
+
+func (p *Port) DC() gpio.PinOut {
+	return &p.dc
+}
+
+func (p *Port) RST() gpio.PinOut {
+	return &p.rst
 }
 
 // String implements [fmt.Stringer].
@@ -53,12 +69,12 @@ func (p *Port) Connect(
 ) (spi.Conn, error) {
 	conn := &spiconn{p}
 
-	p.DC.connect(conn, "DC")
-	p.RST.connect(conn, "RST")
+	p.dc.connect(conn, "DC")
+	p.rst.connect(conn, "RST")
 
 	p.pixels = make([]byte, MaxWidth*MaxHeight)
 	if err := p.maybeCreateWindow(); err != nil {
-		p.Logger.Warn().Err(err).Msg("")
+		p.logger.Warn().Err(err).Msg("")
 	}
 
 	return conn, nil
@@ -105,22 +121,22 @@ func (p *Port) maybeCreateWindow() error {
 
 // edge is called whenever a pin's level changes.
 func (p *Port) edge(pin *PinOut) error {
-	if pin != &p.RST || p.RST.level != gpio.Low {
+	if pin != &p.rst || p.rst.level != gpio.Low {
 		return nil
 	}
 
-	p.Logger.Trace().Msg("Reset")
+	p.logger.Trace().Msg("Reset")
 	return nil
 }
 
 // recv is called whenever data is received.
 func (p *Port) recv(b []byte) error {
-	if p.RST.level == gpio.Low {
+	if p.rst.level == gpio.Low {
 		return nil
-	} else if p.DC.level == gpio.Low {
+	} else if p.dc.level == gpio.Low {
 		r := p.regs
 		if err := r.eval(b); err != nil {
-			p.Logger.Trace().
+			p.logger.Trace().
 				Hex("data", b).
 				//Err(err).
 				Msg("Eval")

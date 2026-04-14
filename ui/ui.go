@@ -14,6 +14,8 @@ type UI struct {
 }
 
 func (ui *UI) Start(ctx context.Context) error {
+	ctx = ui.maybeHookEmulation(ctx)
+
 	for _, step := range []func(context.Context) error{
 		ui.Display.Start,
 		ui.Surface.Start,

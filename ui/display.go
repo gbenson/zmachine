@@ -13,7 +13,6 @@ import (
 	"gbenson.net/go/ssd1305"
 	"gbenson.net/go/zmachine"
 	"gbenson.net/go/zmachine/machine"
-	"gbenson.net/go/zmachine/ui/internal/ssd1305emu"
 	"gbenson.net/go/zmachine/util"
 )
 
@@ -136,9 +135,11 @@ func (d *Display) ensurePort(ctx context.Context) error {
 		d.Port = port
 
 	case "ssd1305emu":
-		d.Port = &ssd1305emu.Port{
-			Logger: *util.Logger(ctx, "ssd1305emu"),
+		port, err := ssd1305emu.NewSPI(ctx)
+		if err != nil {
+			return err
 		}
+		d.Port = port
 	}
 
 	return nil
@@ -153,19 +154,11 @@ func (d *Display) ensureDevice(ctx context.Context) error {
 
 	dev := &ssd1305.SSD1305{
 		Port:     d.Port,
+		DC:       gpioreg.ByName(c.SSD1305.DC),
+		RST:      gpioreg.ByName(c.SSD1305.RST),
 		Width:    c.SSD1305.Width,
 		Height:   c.SSD1305.Height,
 		StartCol: c.SSD1305.StartCol,
-	}
-
-	if emu, ok := dev.Port.(*ssd1305emu.Port); ok {
-		// emulated
-		dev.DC = &emu.DC
-		dev.RST = &emu.RST
-	} else {
-		// hardware
-		dev.DC = gpioreg.ByName(c.SSD1305.DC)
-		dev.RST = gpioreg.ByName(c.SSD1305.RST)
 	}
 
 	if err := dev.Open(); err != nil {
