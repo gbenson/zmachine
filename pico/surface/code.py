@@ -58,7 +58,7 @@ class Encoder:
         if switch != self.lastsw:
             print(f"encoder[{self.number}].switch = {switch}")
             control = self.number + 104  # 104..119 inclusive
-            value = 127 if switch else 0
+            value = 0 if switch else 127
             send_midi(ControlChange(control, value))
             self.lastsw = switch
             anychange = True

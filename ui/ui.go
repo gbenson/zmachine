@@ -5,18 +5,19 @@ import (
 	"encoding/json"
 	"fmt"
 
+	. "gbenson.net/go/zmachine/core"
 	"gbenson.net/go/zmachine/ui/internal/logfollower"
 )
 
 type UI struct {
 	Display Display
-	Surface Surface
+	surface surface
 }
 
 func (ui *UI) Start(ctx context.Context) error {
 	for _, step := range []func(context.Context) error{
 		ui.Display.Start,
-		ui.Surface.Start,
+		ui.surface.Start,
 	} {
 		if err := step(ctx); err != nil {
 			defer ui.Stop(ctx)
@@ -29,6 +30,12 @@ func (ui *UI) Start(ctx context.Context) error {
 
 func (ui *UI) Stop(ctx context.Context) {
 	defer ui.Display.Stop(ctx)
+}
+
+// ControlSurface returns the [MIDISink] that interprets control
+// change messages from the (hardware) control surface.
+func (ui *UI) ControlSurface() MIDISink {
+	return &ui.surface
 }
 
 // Follow causes the UI to receive events from the specified source.
