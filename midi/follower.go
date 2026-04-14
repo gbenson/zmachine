@@ -318,7 +318,7 @@ func (f *Follower) resetSurface(ctx context.Context, name string) error {
 }
 
 func (p *port) receiveMessage(msg midi.Message, timestampms int32) {
-	p.follower.Receiver.Receive(msg)
+	receiveMessage(p.follower.Receiver, p.name, msg)
 }
 
 func (p *port) receiveError(err error) {

@@ -94,9 +94,16 @@ func run(ctx context.Context) error {
 		return err
 	}
 
+	rt := &midi.Router{
+		DefaultReceiver: &ui.Surface,
+	}
+	for i := range rt.ChannelReceivers {
+		rt.ChannelReceivers[i] = &g.voice
+	}
+
 	f := &midi.Follower{
 		Driver:   drv,
-		Receiver: &g.voice,
+		Receiver: rt,
 	}
 	if err := f.Start(ctx); err != nil {
 		return err
