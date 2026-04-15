@@ -12,9 +12,8 @@ type surface struct {
 	log *logger.Logger
 }
 
-func (s *surface) Start(ctx context.Context) error {
+func (s *surface) init(ctx context.Context) {
 	s.log = util.Logger(ctx, s)
-	return nil
 }
 
 // Receive implements [zmachine.MIDISink].

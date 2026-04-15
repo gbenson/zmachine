@@ -26,17 +26,23 @@ type AudioConfig struct {
 	MaxLatency time.Duration `toml:"max_latency"`
 }
 
+const DefaultSampleRate Frequency = 48 * KHz
+const DefaultMaxLatency = 10 * time.Millisecond
+
 type UIConfig struct {
 	Display DisplayConfig `toml:"display"`
 }
 
 type DisplayConfig struct {
-	Enabled bool          `toml:"enabled"`
-	Type    string        `toml:"type"`
-	Driver  string        `toml:"driver"`
-	Port    string        `toml:"port"`
-	SSD1305 SSD1305Config `toml:"ssd1305"`
+	Enabled   bool          `toml:"enabled"`
+	Type      string        `toml:"type"`
+	Driver    string        `toml:"driver"`
+	Port      string        `toml:"port"`
+	SSD1305   SSD1305Config `toml:"ssd1305"`
+	FrameRate Frequency     `toml:"frame_rate"`
 }
+
+const DefaultFrameRate Frequency = 30 * Hz
 
 type SSD1305Config struct {
 	DC       string `toml:"dc"`
@@ -133,16 +139,14 @@ func (c *Config) ReadFrom(r io.Reader) (int64, error) {
 
 // postInit ensures all defaults are set and all values are consistent.
 func (c *Config) postInit() error {
-	return c.Audio.postInit()
-}
-
-// postInit ensures all defaults are set and all values are consistent.
-func (c *AudioConfig) postInit() error {
-	if c.SampleRate == 0 {
-		c.SampleRate = DefaultSampleRate
+	if c.Audio.SampleRate == 0 {
+		c.Audio.SampleRate = DefaultSampleRate
 	}
-	if c.MaxLatency == 0 {
-		c.MaxLatency = DefaultMaxLatency
+	if c.Audio.MaxLatency == 0 {
+		c.Audio.MaxLatency = DefaultMaxLatency
+	}
+	if c.UI.Display.FrameRate == 0 {
+		c.UI.Display.FrameRate = DefaultFrameRate
 	}
 
 	return nil

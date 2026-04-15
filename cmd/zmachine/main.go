@@ -14,7 +14,7 @@ import (
 	zm "gbenson.net/go/zmachine/modules"
 	"gbenson.net/go/zmachine/modules/sid"
 	zsdl "gbenson.net/go/zmachine/sdl"
-	zui "gbenson.net/go/zmachine/ui"
+	zmachine_ui "gbenson.net/go/zmachine/ui"
 	"gbenson.net/go/zmachine/util"
 	"github.com/veandco/go-sdl2/sdl"
 	"gitlab.com/gomidi/midi/v2/drivers/rtmididrv"
@@ -29,21 +29,15 @@ func main() {
 
 func run(ctx context.Context) error {
 	// Set up logging before anything else.
-	lw := log.DefaultWriter()
-	lf := zui.NewLogFollower(lw)
-	log.DefaultLoggerOptions.Writer = lf
-	ui := &zui.UI{}
-	ui.Follow(lf)
-	defer ui.Stop(ctx)
+	ui := &zmachine_ui.UI{}
+	defer func() { ui.Stop(ctx) }()
 
-	logger := log.DefaultLogger()
+	log := ui.Logger()
+	log.Info().Str("comp", "zmachine").Msg("Starting")
+	defer func() { log.Info().Str("comp", "zmachine").Msg("Stopped") }()
 
-	logger.Info().Str("comp", "zmachine").Msg("Starting")
-	defer func() { logger.Info().Str("comp", "zmachine").Msg("Stopped") }()
-
-	ctx = logger.WithContext(ctx)
+	ctx = log.WithContext(ctx)
 	lc := util.NewLoggingCloser(ctx)
-	defer lc.Close(lf)
 
 	// Create the machine, and read any config file.
 	m := zmachine.New()

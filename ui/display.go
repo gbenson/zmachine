@@ -2,16 +2,17 @@ package ui
 
 import (
 	"context"
-	"image"
+	"errors"
+	"io"
 	"sync"
 
+	"periph.io/x/conn/v3/display"
 	"periph.io/x/conn/v3/gpio/gpioreg"
 	"periph.io/x/conn/v3/spi"
 	"periph.io/x/conn/v3/spi/spireg"
 	"periph.io/x/host/v3"
 
 	"gbenson.net/go/ssd1305"
-	"gbenson.net/go/zmachine"
 	"gbenson.net/go/zmachine/machine"
 	"gbenson.net/go/zmachine/ui/internal/ssd1305emu"
 	"gbenson.net/go/zmachine/util"
@@ -19,46 +20,68 @@ import (
 
 type Display struct {
 	Config *machine.DisplayConfig
-
 	Port   spi.PortCloser
-	Device *ssd1305.SSD1305
+	Device display.Drawer
 
 	shouldClosePort   bool
 	shouldCloseDevice bool
 
-	Renderer *Renderer
-	Messages []string
-
-	pmMu sync.Mutex
+	wg   sync.WaitGroup
+	stop context.CancelFunc
 }
 
-func (d *Display) Start(ctx context.Context) error {
+func (d *Display) Start(ctx context.Context, ui Renderable) error {
+	d.ensureConfig(ctx)
+
 	log := util.Logger(ctx, d)
-
-	if d.Renderer != nil {
-		log.Debug().Msg("Using supplied renderer")
+	if !d.Enabled() {
+		log.Debug().Msg("Display not enabled")
 		return nil
-	} else if d.Device != nil {
+	}
+
+	log.Debug().Msg("Starting")
+	if err := d.start(ctx); err != nil {
+		defer d.Stop(ctx)
+		return err
+	}
+
+	ctx, d.stop = context.WithCancel(ctx)
+	d.wg.Go(func() {
+		defer func() { log.Debug().Msg("Stopped") }()
+
+		renderer := NewRenderer(d.Device)
+		ticker := util.NewTicker(d.Config.FrameRate)
+		for {
+			select {
+			case <-ticker.C:
+			case <-ctx.Done():
+				if err := ctx.Err(); !errors.Is(err, context.Canceled) {
+					log.Err(err).Msg("")
+				}
+				return
+			}
+
+			renderer.Clear()
+			ui.Render(renderer)
+			renderer.Present()
+		}
+	})
+
+	return nil
+}
+
+func (d *Display) start(ctx context.Context) error {
+	log := util.Logger(ctx, d)
+	if d.Device != nil {
 		log.Debug().Msg("Using supplied device")
-		return d.ensureRenderer(ctx)
-	}
-
-	c := d.Config
-	if c == nil {
-		c = &zmachine.FromContext(ctx).Config.UI.Display
-	}
-	if !c.Enabled {
-		log.Debug().Str("reason", "not enabled").Msg("Skipping")
 		return nil
 	}
-	d.Config = c
 
 	for _, step := range []func(context.Context) error{
-		d.ensureConfig,
+		d.ensureDefaults,
 		d.ensureDrivers,
 		d.ensurePort,
 		d.ensureDevice,
-		d.ensureRenderer,
 	} {
 		if err := step(ctx); err != nil {
 			return err
@@ -77,13 +100,31 @@ func (d *Display) Stop(ctx context.Context) {
 
 	if d.shouldCloseDevice {
 		defer func() { d.shouldCloseDevice = false }()
-		defer util.LoggedClose(ctx, d.Device)
+		if c, ok := d.Device.(io.Closer); ok {
+			defer util.LoggedClose(ctx, c)
+		}
 	}
+
+	if stop := d.stop; stop != nil {
+		stop()
+	}
+
+	d.wg.Wait()
 }
 
-func (d *Display) ensureConfig(ctx context.Context) error {
-	c := d.Config
-	switch c.Type {
+func (d *Display) ensureConfig(ctx context.Context) {
+	if d.Config != nil {
+		return
+	}
+	d.Config = &machine.FromContext(ctx).Config.UI.Display
+}
+
+func (d *Display) Enabled() bool {
+	return d.Config.Enabled
+}
+
+func (d *Display) ensureDefaults(ctx context.Context) error {
+	switch c := d.Config; c.Type {
 	default:
 		return util.NotImplementedError("ui.display.type=" + c.Type)
 
@@ -175,32 +216,4 @@ func (d *Display) ensureDevice(ctx context.Context) error {
 	d.shouldCloseDevice = true
 
 	return nil
-}
-
-func (d *Display) ensureRenderer(ctx context.Context) error {
-	d.Renderer = NewRenderer(d.Device)
-	return nil
-}
-
-func (d *Display) PushMessage(msg string) {
-	d.pmMu.Lock()
-	defer d.pmMu.Unlock()
-
-	msgs := append(d.Messages, msg)
-	d.Messages = msgs
-
-	r := d.Renderer
-	if r == nil {
-		return
-	}
-
-	if offset := len(msgs) - r.Rows(); offset > 0 {
-		msgs = msgs[offset:]
-	}
-
-	r.Clear()
-	for row, msg := range msgs {
-		r.DrawText(image.Point{0, row * r.FontHeight}, msg)
-	}
-	r.Present()
 }

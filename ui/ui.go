@@ -2,34 +2,45 @@ package ui
 
 import (
 	"context"
-	"encoding/json"
-	"fmt"
+	"sync/atomic"
+	"time"
 
+	"gbenson.net/go/logger"
 	. "gbenson.net/go/zmachine/core"
-	"gbenson.net/go/zmachine/ui/internal/logfollower"
+	"gbenson.net/go/zmachine/util"
+	"periph.io/x/devices/v3/ssd1306/image1bit"
 )
 
 type UI struct {
 	Display Display
 	surface surface
+
+	loggerPage  logFollower
+	currentPage atomic.Pointer[Page]
 }
 
 func (ui *UI) Start(ctx context.Context) error {
-	for _, step := range []func(context.Context) error{
-		ui.Display.Start,
-		ui.surface.Start,
-	} {
-		if err := step(ctx); err != nil {
-			defer ui.Stop(ctx)
-			return err
-		}
+	// Display first...
+	if err := ui.Display.Start(ctx, ui); err != nil {
+		return err
 	}
 
+	// ...then everything else.
+	ui.surface.init(ctx)
 	return nil
 }
 
 func (ui *UI) Stop(ctx context.Context) {
+	defer util.LoggedClose(ctx, &ui.loggerPage)
 	defer ui.Display.Stop(ctx)
+}
+
+// Logger returns a logger that updates the log follower page.
+// It is safe to call this method and use the returned logger
+// at any time, irrespective of whether [Start] and/or [Stop]
+// have been called.
+func (ui *UI) Logger() *logger.Logger {
+	return ui.loggerPage.Logger()
 }
 
 // ControlSurface returns the [MIDISink] that interprets control
@@ -38,25 +49,31 @@ func (ui *UI) ControlSurface() MIDISink {
 	return &ui.surface
 }
 
-// Follow causes the UI to receive events from the specified source.
-func (ui *UI) Follow(es any) {
-	switch s := es.(type) {
-	case *logfollower.Follower:
-		s.AddReceiver(logfollower.ReceiverFunc(ui.onLogRecord))
-	default:
-		panic(fmt.Sprintf("%T: not implemented", es))
+// CurrentPage returns the currently displayed page.
+func (ui *UI) CurrentPage() Page {
+	if p := ui.currentPage.Load(); p != nil {
+		return *p
 	}
+	return &ui.loggerPage
 }
 
-// onLogRecord is called whenever a message is logged at info level or higher.
-func (ui *UI) onLogRecord(rr *logfollower.Record) {
-	var r logRecord
-	if err := json.Unmarshal([]byte(rr.Payload), &r); err != nil {
-		r.Level = "error"
-		r.Component = "ui.LogFollower"
-		r.Message = err.Error()
+// Render implements [Renderable].  This is called once per frame
+// at the display framerate if a display is configured and enabled.
+func (ui *UI) Render(r *Renderer) {
+	r.Clear()
+	ui.CurrentPage().Render(r)
+	ui.renderThrobber(r)
+	r.Present()
+}
+
+// renderThrobber animates a dot on the right-hand edge of the screen.
+func (ui *UI) renderThrobber(r *Renderer) {
+	const shift = 4
+	mask := uint64(r.Height*2) - 1
+
+	y := (uint64(time.Now().UnixMilli()) >> shift) & mask
+	if y > (mask / 2) {
+		y = mask - y
 	}
-	if msg := r.ShortString(); msg != "" {
-		ui.Display.PushMessage(msg)
-	}
+	r.framebuf.Set(r.Width-1, int(y), image1bit.On)
 }

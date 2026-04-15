@@ -7,7 +7,6 @@ import (
 	"periph.io/x/devices/v3/ssd1306/image1bit"
 
 	"gbenson.net/go/logger/log"
-	"gbenson.net/go/microfont"
 
 	"golang.org/x/image/font"
 	"golang.org/x/image/math/fixed"
@@ -41,7 +40,6 @@ func NewRenderer(target display.Drawer) *Renderer {
 		Width:  bounds.Dx(),
 		Height: bounds.Dy(),
 	}
-	r.SetFont(microfont.Face04B03)
 
 	return r
 }
@@ -66,8 +64,8 @@ func (r *Renderer) Clear() {
 	}
 }
 
-func (r *Renderer) DrawText(topleft image.Point, text string) {
-	r.fontDrawer.Dot = fixed.P(topleft.X, topleft.Y+r.fontAscent)
+func (r *Renderer) DrawText(x, y int, text string) {
+	r.fontDrawer.Dot = fixed.P(x, y+r.fontAscent)
 	r.fontDrawer.DrawString(text)
 }
 

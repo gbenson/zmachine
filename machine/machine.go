@@ -1,14 +1,6 @@
 package machine
 
-import (
-	"context"
-	"time"
-
-	. "gbenson.net/go/zmachine/core"
-)
-
-const DefaultSampleRate Frequency = 48 * KHz
-const DefaultMaxLatency = 10 * time.Millisecond
+import "context"
 
 // A Machine manages a collection of components.
 type Machine struct {
