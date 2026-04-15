@@ -141,7 +141,7 @@ func (r *Registers) eval(b []byte) error {
 
 		switch {
 		default:
-			return fmt.Errorf("ssh1305emu: 0x%02x: not implemented", cmd)
+			return fmt.Errorf("ssd1305emu: 0x%02x: not implemented", cmd)
 
 		case cmd < 0x10:
 			// 10.1.1 Set Lower Column Start Address for Page Addressing Mode
@@ -168,7 +168,7 @@ func (p *Port) store(b []byte) error {
 	y0 := r.Page * 8
 	x := r.Column
 	if chk := x + len(b); chk > MaxWidth {
-		return fmt.Errorf("ssh1305emu: %d > %d", chk, MaxWidth)
+		return fmt.Errorf("ssd1305emu: %d > %d", chk, MaxWidth)
 	}
 	px := p.pixels
 	for _, bits := range b {

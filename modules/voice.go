@@ -76,7 +76,7 @@ func (v *Voice) Start(ctx context.Context) error {
 }
 
 // Receive implements [zmachine.MIDISink].
-// It is safe safe for concurrent use.
+// It is safe for concurrent use.
 func (v *Voice) Receive(msg midi.Message) {
 	v.log.Trace().
 		Hex("_msg", []byte(msg)).
