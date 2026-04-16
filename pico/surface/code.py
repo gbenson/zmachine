@@ -100,11 +100,11 @@ def main():
     pots = [Potentiometer(board.A2, VOLUME)]  # ADC2 == GP28 == physical pin 34
     encoders = [
         Encoder(n, *pins) for n, pins in enumerate((
-            (5, 6, 7),    # => 0  Locations:
-            (8, 9, 10),   # => A
-            (11, 12, 13), # => B    +-----------+
-            (14, 15, 0),  # => C    | 0         |
-            (26, 27, 22), # => D    |  ABCD     |
+            (8, 9, 10),   # => A  Locations:
+            (11, 12, 13), # => B
+            (14, 15, 0),  # => C    +-----------+
+            (26, 27, 22), # => D    | 0         |
+            (5, 6, 7),    # => 0    |  ABCD     |
             (2, 3, 4),    # => X    | X Y Z     |
             (19, 20, 21), # => Y    +-----------+
             (16, 17, 18), # => Z

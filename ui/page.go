@@ -7,3 +7,8 @@ type Renderable interface {
 type Page interface {
 	Renderable
 }
+
+type Updatable interface {
+	Page
+	Update(deltas []int, edges []Edge)
+}

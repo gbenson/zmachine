@@ -14,9 +14,14 @@ import (
 type UI struct {
 	Display Display
 	surface surface
+	stepped atomic.Bool
 
-	loggerPage  logFollower
-	currentPage atomic.Pointer[Page]
+	currentPage  atomic.Pointer[Page]
+	pages        []Page
+	selectedPage atomic.Uintptr
+
+	loggerPage logFollower
+	systemMenu systemMenu
 }
 
 func (ui *UI) Start(ctx context.Context) error {
@@ -27,6 +32,8 @@ func (ui *UI) Start(ctx context.Context) error {
 
 	// ...then everything else.
 	ui.surface.init(ctx)
+	ui.systemMenu.init(ctx)
+	ui.AddPage(&ui.systemMenu)
 	return nil
 }
 
@@ -49,6 +56,21 @@ func (ui *UI) ControlSurface() MIDISink {
 	return &ui.surface
 }
 
+// AddPage appends a page to the main menu.  It panics if [Step]
+// has been called.
+func (ui *UI) AddPage(p Page) {
+	if p == nil {
+		panic("nil page")
+	} else if ui.stepped.Load() {
+		// This isn't foolproof, you could race it, but it's
+		// intended as a reminder that there's no lock here,
+		// you're supposed to add the pages at startup then
+		// run the synth and leave them alone.
+		panic("UI has been stepped")
+	}
+	ui.pages = append(ui.pages, p)
+}
+
 // CurrentPage returns the currently displayed page.
 func (ui *UI) CurrentPage() Page {
 	if p := ui.currentPage.Load(); p != nil {
@@ -62,7 +84,9 @@ func (ui *UI) CurrentPage() Page {
 func (ui *UI) Render(r *Renderer) {
 	r.Clear()
 	ui.CurrentPage().Render(r)
-	ui.renderThrobber(r)
+	if !ui.stepped.Load() {
+		ui.renderThrobber(r)
+	}
 	r.Present()
 }
 
@@ -76,4 +100,36 @@ func (ui *UI) renderThrobber(r *Renderer) {
 		y = mask - y
 	}
 	r.framebuf.Set(r.Width-1, int(y), image1bit.On)
+}
+
+// Step is called every time the audio buffer is filled.  Note that
+// this is almost certainly much faster than the display framerate:
+// the default settings (48KHz audio, <10ms latency) will use a
+// 256-sample audio buffer, which will cause Step to be called at
+// 48,000 ÷ 256 = 187.5 Hz.
+func (ui *UI) Step() {
+	isFirstStep := !ui.stepped.Swap(true)
+	if isFirstStep {
+		ui.systemMenu.onFirstStep()
+	}
+
+	collected := ui.surface.Scan()
+
+	delta := collected.encoderDeltas[menuEncoder]
+	if delta != 0 || isFirstStep {
+		index := ui.selectedPage.Add(uintptr(delta))
+		count := len(ui.pages)
+		if count < 1 {
+			return // no pages == no redraws
+		}
+		page := ui.pages[index%uintptr(count)]
+		ui.currentPage.Store(&page)
+	} else {
+		page := ui.CurrentPage()
+		if p, ok := page.(Updatable); ok {
+			deltas := collected.encoderDeltas[:encoderD+1]
+			edges := collected.encoderEdges[:encoderD+1]
+			p.Update(deltas, edges)
+		}
+	}
 }

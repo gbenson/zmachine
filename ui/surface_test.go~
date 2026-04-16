@@ -1,0 +1,11 @@
+package ui
+
+import (
+	"testing"
+
+	"gotest.tools/v3/assert"
+)
+
+func TestEncoderNumbers(t *testing.T) {
+	assert.Equal(t, menuEncoder, 0)
+}

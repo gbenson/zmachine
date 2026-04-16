@@ -8,8 +8,24 @@ import (
 	"gitlab.com/gomidi/midi/v2"
 )
 
+type encoderID int
+
+const (
+	encoderA encoderID = iota
+	encoderB
+	encoderC
+	encoderD
+	menuEncoder
+	freqEncoder
+	resEncoder
+	modEncoder
+	numEncoders
+)
+
 type surface struct {
-	log *logger.Logger
+	log      *logger.Logger
+	encoders [numEncoders]encoder
+	scanbuf  collectedState
 }
 
 func (s *surface) init(ctx context.Context) {
@@ -75,6 +91,11 @@ func (s *surface) onVolumeLSB(v int) {
 }
 
 func (s *surface) onEncoderMoved(n, amount int) {
+	if n >= 0 && n < len(s.encoders) {
+		s.encoders[n].receiveMovement(amount)
+		return
+	}
+
 	s.log.Trace().
 		Int("encoder", n).
 		Int("moved", amount).
@@ -86,4 +107,21 @@ func (s *surface) onEncoderClicked(n int, clicked bool) {
 		Int("encoder", n).
 		Bool("clicked", clicked).
 		Msg("Unhandled")
+}
+
+type collectedState struct {
+	encoderDeltas [numEncoders]int
+	encoderEdges  [numEncoders]Edge
+	volumeValue   int
+	volumeDelta   int
+}
+
+func (s *surface) Scan() *collectedState {
+	cs := &s.scanbuf
+	for i := range s.encoders { // do not copy!
+		cs.encoderDeltas[i] = s.encoders[i].collectMovement()
+		cs.encoderEdges[i] = s.encoders[i].collectEdges()
+	}
+	// XXX volume!
+	return cs
 }

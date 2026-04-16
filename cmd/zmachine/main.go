@@ -83,7 +83,7 @@ func run(ctx context.Context) error {
 	}
 	defer lc.Close(drv)
 
-	g := &generator{}
+	g := &generator{ui: ui}
 	if err := g.Start(ctx); err != nil {
 		return err
 	}
@@ -122,6 +122,8 @@ func run(ctx context.Context) error {
 }
 
 type generator struct {
+	ui *zmachine_ui.UI
+
 	//arp   zm.TestArpeggiator
 	voice zm.Voice
 	osc1  zm.PhaseAccumulator
@@ -177,6 +179,8 @@ func (sg *generator) Start(ctx context.Context) error {
 }
 
 func (sg *generator) Generate(ctx context.Context, buf []float32) (int, error) {
+	sg.ui.Step()
+
 	for i := range buf {
 		//sg.arp.Step()
 		sg.voice.Step()
