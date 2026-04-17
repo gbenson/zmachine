@@ -1,8 +1,16 @@
+GOLANG_VERSION ?= $(shell sed -n 's/^go //p' go.mod)
+export BUILDER_IMAGE ?= golang:$(GOLANG_VERSION)-trixie
+export BUILDER_UID ?= $(shell id -u)
+export BUILDER_GID ?= $(shell id -g)
+
 all: build
 
-.PHONY: build check lint test run install
+.PHONY: build builder check lint test run install
 
 build: zmachine
+
+builder:
+	docker compose run --rm -it builder
 
 check: test
 
