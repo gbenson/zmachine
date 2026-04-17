@@ -1,5 +1,9 @@
 ---
 - hosts: all
+  vars:
+    zmachine_install_dir: /boot/firmware/zmachine
+    zmachine_service_env: "{{ zmachine_install_dir }}/service.env"
+    zmachine_config_toml: "{{ zmachine_install_dir }}/config.toml"
   vars_files:
     - vars/firmware.yml
 
@@ -59,7 +63,10 @@
         path: "{{ item }}"
         state: absent
       loop:
+        - /boot/firmware/zmachine.env
+        - /boot/firmware/zmachine.toml
         - /etc/modules-load.d/zmachine.conf
+        - /usr/bin/zmachine
         - /var/lib/man-db/auto-update
         - /var/swap
       become: yes
@@ -74,6 +81,7 @@
         group: root
         mode: "0755"
       loop:
+        - "{{ zmachine_install_dir }}"
         - /opt/firmware
       become: yes
       tags:
@@ -138,7 +146,7 @@
 
     - name: Zmachine is configured
       ansible.builtin.copy:
-        dest: /boot/firmware/zmachine.toml
+        dest: "{{ zmachine_config_toml }}"
         owner: root
         group: root
         mode: "0644"
@@ -154,14 +162,14 @@
 
     - name: Service is configured
       ansible.builtin.copy:
-        dest: /boot/firmware/zmachine.env
+        dest: "{{ zmachine_service_env }}"
         owner: root
         group: root
         mode: "0644"
         content: |
           LOG_LEVEL=debug
           XDG_RUNTIME_DIR=/run/zmachine
-          ZMACHINE_CONFIG_TOML=/boot/firmware/zmachine.toml
+          ZMACHINE_CONFIG_TOML={{ zmachine_config_toml }}
       become: yes
       tags:
         - services
@@ -245,6 +253,6 @@
       ansible.builtin.file:
         path: ~/.config/zmachine/config.toml
         state: link
-        src: /boot/firmware/zmachine.toml
+        src: "{{ zmachine_config_toml }}"
       tags:
         - devel

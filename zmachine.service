@@ -2,7 +2,7 @@
 Description=Zmachine service
 After=sound.target
 Wants=sound.target
-ConditionPathExists=/usr/bin/zmachine
+ConditionPathExists=/boot/firmware/zmachine/zmachine
 
 # Could maybe get the display up faster using `DefaultDependencies=no`
 # and moving us `After=local-fs.target`, but that adds complexity
@@ -22,8 +22,8 @@ ConditionPathExists=/usr/bin/zmachine
 
 [Service]
 Type=exec
-EnvironmentFile=/boot/firmware/zmachine.env
-ExecStart=/usr/bin/zmachine
+EnvironmentFile=/boot/firmware/zmachine/service.env
+ExecStart=/boot/firmware/zmachine/zmachine
 Restart=always
 
 [Install]
