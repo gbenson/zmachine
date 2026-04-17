@@ -256,3 +256,12 @@
         src: "{{ zmachine_config_toml }}"
       tags:
         - devel
+
+    - name: /boot/firmware is read-only
+      ansible.builtin.replace:
+        path: /etc/fstab
+        regexp: '(\s+/boot(?:/firmware)?\s+\S+\s+\S+?)(?:,ro)?(\s+)'
+        replace: '\1,ro\2'
+      become: yes
+      tags:
+        - readonlyboot
