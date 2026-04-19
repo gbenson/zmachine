@@ -1,4 +1,6 @@
 GOLANG_VERSION ?= $(shell sed -n 's/^go //p' go.mod)
+GOFLAGS ?= -trimpath -ldflags="-s -w"
+
 export BUILDER_IMAGE ?= golang:$(GOLANG_VERSION)-trixie
 export BUILDER_UID ?= $(shell id -u)
 export BUILDER_GID ?= $(shell id -g)
@@ -25,11 +27,11 @@ run: check
 	go run ./cmd/zmachine
 
 zmachine: check
-	go build -o $@ ./cmd/zmachine
+	go build $(GOFLAGS) -o $@ ./cmd/zmachine
 
 install:
 	@bash escape-sudo.sh $(MAKE) zmachine
-	install -m755 zmachine /usr/bin
+	install -m755 --compare --backup=numbered zmachine /boot/firmware/zmachine
 
 coverage.html: coverage.out
 	go tool cover -html=$< -o $@
