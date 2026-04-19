@@ -103,6 +103,11 @@ func (s *surface) onEncoderMoved(n, amount int) {
 }
 
 func (s *surface) onEncoderClicked(n int, clicked bool) {
+	if n >= 0 && n < len(s.encoders) {
+		s.encoders[n].receiveEdge(clicked)
+		return
+	}
+
 	s.log.Trace().
 		Int("encoder", n).
 		Bool("clicked", clicked).

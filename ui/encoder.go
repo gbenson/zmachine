@@ -15,6 +15,10 @@ func (e *encoder) collectMovement() int {
 	return int(e.movement.Swap(0))
 }
 
+func (e *encoder) receiveEdge(clicked bool) {
+	e.receiveEdges(edgeFromClicked(clicked))
+}
+
 func (e *encoder) receiveEdges(edges Edge) {
 	e.edges.Or(uintptr(edges))
 }
