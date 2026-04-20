@@ -82,12 +82,10 @@ func (ui *UI) CurrentPage() Page {
 // Render implements [Renderable].  This is called once per frame
 // at the display framerate if a display is configured and enabled.
 func (ui *UI) Render(r *Renderer) {
-	r.Clear()
 	ui.CurrentPage().Render(r)
 	if !ui.stepped.Load() {
 		ui.renderThrobber(r)
 	}
-	r.Present()
 }
 
 // renderThrobber animates a dot on the right-hand edge of the screen.
