@@ -5,6 +5,8 @@ import (
 	"errors"
 	"io"
 	"sync"
+	"sync/atomic"
+	"time"
 
 	"periph.io/x/conn/v3/display"
 	"periph.io/x/conn/v3/gpio/gpioreg"
@@ -29,6 +31,9 @@ type Display struct {
 
 	wg   sync.WaitGroup
 	stop context.CancelFunc
+
+	startTime    time.Time
+	lastActivity atomic.Int64
 }
 
 func (d *Display) Start(ctx context.Context) error {
@@ -50,12 +55,16 @@ func (d *Display) Start(ctx context.Context) error {
 		return err
 	}
 
+	d.startTime = time.Now()
+	d.KeepAlive()
+
 	ctx, d.stop = context.WithCancel(ctx)
 	d.wg.Go(func() {
 		defer func() { log.Debug().Msg("Stopped") }()
 
 		renderer := newRenderer(d.Device)
 		ticker := util.NewTicker(d.Config.FrameRate)
+		blanked := false
 		for {
 			select {
 			case <-ticker.C:
@@ -64,6 +73,21 @@ func (d *Display) Start(ctx context.Context) error {
 					log.Err(err).Msg("")
 				}
 				return
+			}
+
+			if d.shouldBlank() {
+				if !blanked {
+					if err := d.Device.Halt(); err != nil {
+						log.Err(err).Msg("Screen not blanked")
+					} else {
+						log.Debug().Msg("Screen blanked")
+					}
+					blanked = true
+				}
+				continue
+			} else if blanked {
+				log.Debug().Msg("Screen unblanked")
+				blanked = false
 			}
 
 			renderer.clear()
@@ -221,4 +245,23 @@ func (d *Display) ensureDevice(ctx context.Context) error {
 	d.shouldCloseDevice = true
 
 	return nil
+}
+
+// KeepAlive prevents the screen from blanking.
+func (d *Display) KeepAlive() {
+	d.lastActivity.Store(d.now())
+}
+
+// shouldBlank reports whether the screen should be blanked.
+func (d *Display) shouldBlank() bool {
+	blankTime := d.Config.BlankTime
+	if blankTime < 1 {
+		return false
+	}
+	return (d.now() - d.lastActivity.Load()) > int64(blankTime)
+}
+
+// now returns a monotonic timestamp.
+func (d *Display) now() int64 {
+	return int64(time.Now().Sub(d.startTime))
 }

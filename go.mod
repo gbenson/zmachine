@@ -5,7 +5,7 @@ go 1.26.0
 require (
 	gbenson.net/go/logger v1.8.0
 	gbenson.net/go/microfont v0.4.0
-	gbenson.net/go/ssd1305 v0.3.0
+	gbenson.net/go/ssd1305 v0.4.0
 	github.com/BurntSushi/toml v1.6.0
 	github.com/rs/zerolog v1.34.0
 	github.com/veandco/go-sdl2 v0.4.40

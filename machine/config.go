@@ -40,9 +40,11 @@ type DisplayConfig struct {
 	Port      string        `toml:"port"`
 	SSD1305   SSD1305Config `toml:"ssd1305"`
 	FrameRate Frequency     `toml:"frame_rate"`
+	BlankTime time.Duration `toml:"blank_time"`
 }
 
 const DefaultFrameRate Frequency = 30 * Hz
+const DefaultBlankTime = 1 * time.Minute
 
 type SSD1305Config struct {
 	DC       string `toml:"dc"`
@@ -147,6 +149,9 @@ func (c *Config) postInit() error {
 	}
 	if c.UI.Display.FrameRate == 0 {
 		c.UI.Display.FrameRate = DefaultFrameRate
+	}
+	if c.UI.Display.BlankTime == 0 {
+		c.UI.Display.BlankTime = DefaultBlankTime
 	}
 
 	return nil

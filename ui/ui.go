@@ -56,11 +56,13 @@ func (ui *UI) Logger() *logger.Logger {
 
 // Receive implements [zmachine.MIDISink].
 func (ui *UI) Receive(msg midi.Message) {
+	ui.Display.KeepAlive()
 }
 
 // ReceiveFromSurface implements [ControlSink].
 func (ui *UI) ReceiveFromSurface(msg midi.Message) {
 	ui.surface.Receive(msg)
+	ui.Display.KeepAlive()
 }
 
 // ControlSurface returns the [core.MIDISink] that interprets
