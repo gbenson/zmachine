@@ -86,7 +86,7 @@ const shutdownYesBoxMinX = 79
 const shutdownYesBoxMaxX = 100
 
 // Render implements [Renderable].
-func (m *systemMenu) Render(r *Renderer) {
+func (m *systemMenu) Render(r Renderer) {
 	r.SetFont(microfont.Face04B03B)
 	r.DrawText(0, 0, m.uptimeLine())
 	r.DrawText(0, 8, m.bootTimeLine)
@@ -108,7 +108,7 @@ func (m *systemMenu) Render(r *Renderer) {
 			continue
 		}
 
-		fb := r.framebuf
+		fb := r.(*renderer).fb // XXX hack (need Renderer.Invert(r Rect)?
 		rowStart := 3 * fb.Stride
 		for i := mo.start; i < mo.limit; i++ {
 			fb.Pix[rowStart+i] ^= 254

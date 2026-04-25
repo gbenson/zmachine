@@ -2,6 +2,8 @@ package ui
 
 import (
 	"image"
+	"image/color"
+	"image/draw"
 
 	"periph.io/x/conn/v3/display"
 	"periph.io/x/devices/v3/ssd1306/image1bit"
@@ -12,66 +14,79 @@ import (
 	"golang.org/x/image/math/fixed"
 )
 
-type Renderer struct {
-	target     display.Drawer
-	framebuf   *image1bit.VerticalLSB
-	fontDrawer font.Drawer
-	fontAscent int
-
-	Width, Height int
-	FontHeight    int
+type Renderer interface {
+	draw.Image
+	SetFont(f font.Face)
+	DrawText(x, y int, text string)
 }
 
-func NewRenderer(target display.Drawer) *Renderer {
+type renderer struct {
+	target     display.Drawer
+	fb         *image1bit.VerticalLSB
+	fontDrawer font.Drawer
+	fontAscent int
+}
+
+func newRenderer(target display.Drawer) *renderer {
 	if target == nil {
 		panic("nil target")
 	}
 
-	bounds := target.Bounds()
-	fb := image1bit.NewVerticalLSB(bounds)
-
-	r := &Renderer{
-		target:   target,
-		framebuf: fb,
+	fb := image1bit.NewVerticalLSB(target.Bounds())
+	r := &renderer{
+		target: target,
+		fb:     fb,
 		fontDrawer: font.Drawer{
 			Src: &image.Uniform{C: image1bit.On},
 			Dst: fb,
 		},
-		Width:  bounds.Dx(),
-		Height: bounds.Dy(),
 	}
 
 	return r
 }
 
-func (r *Renderer) SetFont(f font.Face) {
-	m := f.Metrics()
-	r.fontDrawer.Face = f
-	r.fontAscent = m.Ascent.Round()
-	r.FontHeight = m.Height.Round()
-}
-
-// Return the number of rows of text that may be displayed with the
-// current font.
-func (r *Renderer) Rows() int {
-	return r.Height / r.FontHeight
-}
-
-func (r *Renderer) Clear() {
-	b := r.framebuf.Pix
+func (r *renderer) clear() {
+	b := r.fb.Pix
 	for i := range b {
 		b[i] = 0
 	}
 }
 
-func (r *Renderer) DrawText(x, y int, text string) {
-	r.fontDrawer.Dot = fixed.P(x, y+r.fontAscent)
-	r.fontDrawer.DrawString(text)
-}
-
-func (r *Renderer) Present() {
-	fb := r.framebuf
-	if err := r.target.Draw(fb.Rect, fb, image.Point{}); err != nil {
+// present updates the screen with any rendering performed since the
+// previous call.
+func (r *renderer) present() {
+	if err := r.target.Draw(r.Bounds(), r.fb, image.Point{}); err != nil {
 		log.Warn().Err(err).Msg("")
 	}
+}
+
+// Bounds implements [image.Image].
+func (r *renderer) Bounds() image.Rectangle {
+	return r.fb.Bounds()
+}
+
+// ColorModel implements [image.Image].
+func (r *renderer) ColorModel() color.Model {
+	return r.fb.ColorModel()
+}
+
+// At implements [image.Image].
+func (r *renderer) At(x, y int) color.Color {
+	return r.fb.At(x, y)
+}
+
+// Set implements [draw.Image].
+func (r *renderer) Set(x, y int, c color.Color) {
+	r.fb.Set(x, y, c)
+}
+
+func (r *renderer) SetFont(f font.Face) {
+	m := f.Metrics()
+	r.fontDrawer.Face = f
+	r.fontAscent = m.Ascent.Round()
+}
+
+func (r *renderer) DrawText(x, y int, text string) {
+	r.fontDrawer.Dot = fixed.P(x, y+r.fontAscent)
+	r.fontDrawer.DrawString(text)
 }

@@ -1,7 +1,7 @@
 package ui
 
 type Renderable interface {
-	Render(r *Renderer)
+	Render(r Renderer)
 }
 
 type Page interface {

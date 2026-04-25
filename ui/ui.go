@@ -84,7 +84,7 @@ func (ui *UI) CurrentPage() Page {
 
 // Render implements [Renderable].  This is called once per frame
 // at the display framerate if a display is configured and enabled.
-func (ui *UI) Render(r *Renderer) {
+func (ui *UI) Render(r Renderer) {
 	ui.CurrentPage().Render(r)
 	if !ui.stepped.Load() {
 		ui.renderThrobber(r)
@@ -92,15 +92,17 @@ func (ui *UI) Render(r *Renderer) {
 }
 
 // renderThrobber animates a dot on the right-hand edge of the screen.
-func (ui *UI) renderThrobber(r *Renderer) {
-	const shift = 4
-	mask := uint64(r.Height*2) - 1
+func (ui *UI) renderThrobber(r Renderer) {
+	b := r.Bounds()
 
-	y := (uint64(time.Now().UnixMilli()) >> shift) & mask
+	const shift = 4
+	mask := uint64(b.Dy()) - 1
+
+	y := (uint64(time.Now().UnixMilli()) >> 4) % mask
 	if y > (mask / 2) {
 		y = mask - y
 	}
-	r.framebuf.Set(r.Width-1, int(y), image1bit.On)
+	r.Set(b.Max.X-1, int(y), image1bit.On)
 }
 
 // Step is called every time the audio buffer is filled.  Note that

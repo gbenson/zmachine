@@ -54,7 +54,7 @@ func (d *Display) Start(ctx context.Context) error {
 	d.wg.Go(func() {
 		defer func() { log.Debug().Msg("Stopped") }()
 
-		renderer := NewRenderer(d.Device)
+		renderer := newRenderer(d.Device)
 		ticker := util.NewTicker(d.Config.FrameRate)
 		for {
 			select {
@@ -66,9 +66,9 @@ func (d *Display) Start(ctx context.Context) error {
 				return
 			}
 
-			renderer.Clear()
+			renderer.clear()
 			d.Renderer.Render(renderer)
-			renderer.Present()
+			renderer.present()
 		}
 	})
 

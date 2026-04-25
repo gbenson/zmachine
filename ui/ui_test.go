@@ -18,7 +18,7 @@ type testPage struct {
 	deltas []int
 }
 
-func (tp *testPage) Render(r *Renderer) {
+func (tp *testPage) Render(r Renderer) {
 	panic("should not call")
 }
 

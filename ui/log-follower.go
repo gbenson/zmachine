@@ -149,18 +149,22 @@ func shortString(l, m, c, s string) string {
 }
 
 // Render implements [Renderable].
-func (f *logFollower) Render(r *Renderer) {
-	r.SetFont(microfont.Face04B03)
+func (f *logFollower) Render(r Renderer) {
+	font := microfont.Face04B03
+	r.SetFont(font)
+
+	rowHeight := font.Metrics().Height.Round()
+	numRows := r.Bounds().Dy() / rowHeight
 
 	f.mu.RLock()
 	defer f.mu.RUnlock()
 
 	msgs := f.msgs
-	if offset := len(msgs) - r.Rows(); offset > 0 {
+	if offset := len(msgs) - numRows; offset > 0 {
 		msgs = msgs[offset:]
 	}
 
 	for row, msg := range msgs {
-		r.DrawText(0, row*r.FontHeight, msg)
+		r.DrawText(0, row*rowHeight, msg)
 	}
 }
