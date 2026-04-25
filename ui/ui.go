@@ -26,7 +26,10 @@ type UI struct {
 
 func (ui *UI) Start(ctx context.Context) error {
 	// Display first...
-	if err := ui.Display.Start(ctx, ui); err != nil {
+	if ui.Display.Renderer == nil {
+		ui.Display.Renderer = ui
+	}
+	if err := ui.Display.Start(ctx); err != nil {
 		return err
 	}
 

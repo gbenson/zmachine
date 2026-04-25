@@ -19,9 +19,10 @@ import (
 )
 
 type Display struct {
-	Config *machine.DisplayConfig
-	Port   spi.PortCloser
-	Device display.Drawer
+	Config   *machine.DisplayConfig
+	Port     spi.PortCloser
+	Device   display.Drawer
+	Renderer Renderable
 
 	shouldClosePort   bool
 	shouldCloseDevice bool
@@ -30,7 +31,11 @@ type Display struct {
 	stop context.CancelFunc
 }
 
-func (d *Display) Start(ctx context.Context, ui Renderable) error {
+func (d *Display) Start(ctx context.Context) error {
+	if d.Renderer == nil {
+		panic("nil renderer")
+	}
+
 	d.ensureConfig(ctx)
 
 	log := util.Logger(ctx, d)
@@ -62,7 +67,7 @@ func (d *Display) Start(ctx context.Context, ui Renderable) error {
 			}
 
 			renderer.Clear()
-			ui.Render(renderer)
+			d.Renderer.Render(renderer)
 			renderer.Present()
 		}
 	})
