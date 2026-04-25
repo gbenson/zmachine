@@ -6,7 +6,7 @@ import (
 	"time"
 
 	"gbenson.net/go/logger"
-	. "gbenson.net/go/zmachine/core"
+	"gbenson.net/go/zmachine/core"
 	"gbenson.net/go/zmachine/util"
 	"periph.io/x/devices/v3/ssd1306/image1bit"
 )
@@ -47,19 +47,19 @@ func (ui *UI) Stop(ctx context.Context) {
 
 // Logger returns a logger that updates the log follower page.
 // It is safe to call this method and use the returned logger
-// at any time, irrespective of whether [Start] and/or [Stop]
-// have been called.
+// at any time, irrespective of whether Start and/or Stop have
+// been called.
 func (ui *UI) Logger() *logger.Logger {
 	return ui.loggerPage.Logger()
 }
 
-// ControlSurface returns the [MIDISink] that interprets control
-// change messages from the (hardware) control surface.
-func (ui *UI) ControlSurface() MIDISink {
+// ControlSurface returns the [core.MIDISink] that interprets
+// control change messages from the (hardware) control surface.
+func (ui *UI) ControlSurface() core.MIDISink {
 	return &ui.surface
 }
 
-// AddPage appends a page to the main menu.  It panics if [Step]
+// AddPage appends a page to the main menu.  It panics if Step
 // has been called.
 func (ui *UI) AddPage(p Page) {
 	if p == nil {
