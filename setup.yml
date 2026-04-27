@@ -154,8 +154,6 @@
           [ui.display]
           enabled = true
           type = "waveshare_2in23_oled"
-          ssd1305.dc = "GPIO17"
-          ssd1305.rst = "GPIO16"
       become: yes
       tags:
         - services
