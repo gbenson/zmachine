@@ -3,7 +3,6 @@ package midi
 import (
 	"context"
 	"errors"
-	"regexp"
 	"strings"
 	"sync"
 	"sync/atomic"
@@ -162,64 +161,37 @@ func (f *Follower) poll(ctx context.Context) error {
 }
 
 type port struct {
-	ctx      context.Context
-	follower *Follower
-	in       drivers.In
-	name     string
-	lastSeen uintptr
-	stop     func()
+	ctx              context.Context
+	follower         *Follower
+	in               drivers.In
+	fullName         string
+	name             string
+	isControlSurface bool
+	lastSeen         uintptr
+	stop             func()
 }
-
-var portNameRx = regexp.MustCompile(
-	`^(?P<short_name>[^:]+):` +
-		`(?P<full_name>.+) ` +
-		`(?P<alsa_client_number>\d+):` +
-		`(?P<alsa_port_number>\d+)$`,
-)
 
 const (
 	controlSurfaceVendorID  = "Zmachine"        // USB vendor ID
 	controlSurfaceProductID = "Control Surface" // USB product ID
 	controlSurfacePortID    = "ZMCS"            // USB MIDI port
 
-	ControlSurfaceName = controlSurfaceVendorID + " " + controlSurfaceProductID
+	ControlSurfaceName = controlSurfaceProductID
 )
-
-func (p *port) setName(name string) {
-	p.name = name
-
-	// RtMidi port names be like:
-	//  - "Midi Through:Midi Through Port-0 14:0"
-	//  - "MPK mini Play mk3:MPK mini Play mk3 MIDI 1 20:0"
-	//  - "MicroLab mk3:MicroLab mk3 MicroLab mk3 20:0"
-	//  - "TiMidity:TiMidity port 0 128:0"
-	// The 128:0 are the ALSA client and port numbers, and
-	// they're not fixed, so we strip them to make routing
-	// messages by port name simpler.
-	if m := portNameRx.FindStringSubmatch(name); len(m) > 2 {
-		dname := m[1]
-		pname := m[2]
-		if dname == pname || strings.HasPrefix(pname, dname+" ") {
-			name = dname
-		}
-	}
-
-	if name == ControlSurfaceName {
-		name = p.name // don't get spoofed!
-	} else if name == controlSurfaceProductID {
-		if strings.Contains(p.name, controlSurfacePortID) {
-			name = ControlSurfaceName
-		}
-	}
-
-	p.name = name
-}
 
 func (p *port) start(ctx context.Context) error {
 	p.ctx = ctx
 	ctx = nil // crowbar
 
-	p.setName(p.in.String())
+	fullName := p.in.String()
+	p.name = humanizePortName(fullName)
+
+	if p.name == controlSurfaceProductID {
+		if strings.Contains(fullName, controlSurfacePortID) {
+			p.name = ControlSurfaceName
+			p.isControlSurface = true
+		}
+	}
 
 	log := logger.Ctx(p.ctx).With().
 		Str("source", p.name).
@@ -259,7 +231,7 @@ func (p *port) listen() error {
 	log := logger.Ctx(ctx)
 	log.Info().Msg("Opened")
 
-	if p.name == ControlSurfaceName {
+	if p.isControlSurface {
 		p.tryResetSurface()
 	}
 
@@ -318,7 +290,7 @@ func (f *Follower) resetSurface(ctx context.Context, name string) error {
 }
 
 func (p *port) receiveMessage(msg midi.Message, timestampms int32) {
-	receiveMessage(p.follower.Receiver, p.name, msg)
+	receiveMessage(p.follower.Receiver, p.name, p.isControlSurface, msg)
 }
 
 func (p *port) receiveError(err error) {

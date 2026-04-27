@@ -26,6 +26,15 @@ type MIDISink interface {
 	Receive(msg midi.Message)
 }
 
+// A ControlSink is a component that receives MIDI messages from
+// Zmachine control surfaces.
+type ControlSink interface {
+	MIDISink
+
+	// ReceiveFrom receives one MIDI message from a named device.
+	ReceiveFromSurface(msg midi.Message)
+}
+
 // A Shaper samples a periodic waveform.
 type Shaper interface {
 	// Fraction returns the amplitude of its waveform at the given

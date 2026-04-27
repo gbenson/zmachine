@@ -88,9 +88,7 @@ func run(ctx context.Context) error {
 		return err
 	}
 
-	rt := &midi.Router{
-		DefaultReceiver: ui.ControlSurface(),
-	}
+	rt := &midi.Router{GlobalReceiver: ui}
 	for i := range rt.ChannelReceivers {
 		rt.ChannelReceivers[i] = &g.voice
 	}

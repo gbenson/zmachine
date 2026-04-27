@@ -8,6 +8,7 @@ import (
 	"gbenson.net/go/logger"
 	"gbenson.net/go/zmachine/core"
 	"gbenson.net/go/zmachine/util"
+	"gitlab.com/gomidi/midi/v2"
 	"periph.io/x/devices/v3/ssd1306/image1bit"
 )
 
@@ -51,6 +52,15 @@ func (ui *UI) Stop(ctx context.Context) {
 // been called.
 func (ui *UI) Logger() *logger.Logger {
 	return ui.loggerPage.Logger()
+}
+
+// Receive implements [zmachine.MIDISink].
+func (ui *UI) Receive(msg midi.Message) {
+}
+
+// ReceiveFromSurface implements [ControlSink].
+func (ui *UI) ReceiveFromSurface(msg midi.Message) {
+	ui.surface.Receive(msg)
 }
 
 // ControlSurface returns the [core.MIDISink] that interprets

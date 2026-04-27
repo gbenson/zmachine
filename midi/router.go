@@ -6,7 +6,7 @@ import (
 )
 
 type Router struct {
-	DefaultReceiver  MIDISink
+	GlobalReceiver   MIDISink
 	ChannelReceivers [16]MIDISink
 }
 
@@ -26,29 +26,44 @@ func (r *Router) Receive(msg midi.Message) {
 
 // ReceiveFrom implements [SourcedMIDISink].
 func (r *Router) ReceiveFrom(src string, msg midi.Message) {
-	if receiver := r.receiverFor(src, msg); receiver != nil {
-		receiveMessage(receiver, src, msg)
-	}
-}
+	receiveMessage(r.GlobalReceiver, src, false, msg)
 
-func (r *Router) receiverFor(deviceName string, msg midi.Message) MIDISink {
 	var channel uint8
-	switch {
-	case deviceName == ControlSurfaceName:
-		break
-
-	case msg.GetChannel(&channel):
-		return r.ChannelReceivers[channel]
+	if !msg.GetChannel(&channel) {
+		return
 	}
 
-	return r.DefaultReceiver
+	if r := r.ChannelReceivers[channel]; r != nil {
+		receiveMessage(r, src, false, msg)
+	}
 }
 
-func receiveMessage(r MIDISink, src string, msg midi.Message) {
-	switch rr := r.(type) {
-	case SourcedMIDISink:
-		rr.ReceiveFrom(src, msg)
-	default:
-		r.Receive(msg)
+// ReceiveFromSurface implements [ControlSink].
+func (r *Router) ReceiveFromSurface(msg midi.Message) {
+	if cs, ok := r.GlobalReceiver.(ControlSink); ok {
+		cs.ReceiveFromSurface(msg)
 	}
+}
+
+func receiveMessage(
+	r MIDISink,
+	src string,
+	srcIsControlSurface bool,
+	msg midi.Message,
+) {
+	if srcIsControlSurface {
+		if rr, ok := r.(ControlSink); ok {
+			rr.ReceiveFromSurface(msg)
+			return
+		}
+	}
+
+	if src != "" {
+		if rr, ok := r.(SourcedMIDISink); ok {
+			rr.ReceiveFrom(src, msg)
+			return
+		}
+	}
+
+	r.Receive(msg)
 }
