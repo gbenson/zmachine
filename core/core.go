@@ -35,6 +35,12 @@ type ControlSink interface {
 	ReceiveFromSurface(msg midi.Message)
 }
 
+// A Clamper is a value with an acceptable range it can clamp itself to.
+type Clamper interface {
+	// Clamped returns the clamped value.
+	Clamped() float64
+}
+
 // A Shaper is a component that samples a periodic waveform.
 type Shaper interface {
 	// Fraction returns the amplitude of its waveform at the given

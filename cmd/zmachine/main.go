@@ -133,6 +133,9 @@ type generator struct {
 	lfo1shaper Shaper
 	lfo2shaper Shaper
 
+	ampEnv    zm.Envelope[Fraction]
+	envelopes []envelope
+
 	outputLevel Fraction
 }
 
@@ -142,6 +145,12 @@ type generator struct {
 // (in Start, if any starter fails). then, make generator.in not a
 // pointer, make generator.Start start it (and so also make gen.stop
 // stop it), and remove the above midi.Follower.Start.
+
+type envelope interface {
+	Starter
+	SetGate(v bool)
+	Step()
+}
 
 // Start implements [Starter].
 func (sg *generator) Start(ctx context.Context) error {
@@ -156,9 +165,19 @@ func (sg *generator) Start(ctx context.Context) error {
 			&sg.lfo1,
 			&sg.lfo2,
 			&sg.filt,
+			//&sg.ampEnv,
 		},
 	); err != nil {
 		return err
+	}
+
+	sg.envelopes = []envelope{
+		&sg.ampEnv,
+	}
+	for _, e := range sg.envelopes {
+		if err := e.Start(ctx); err != nil {
+			return err
+		}
 	}
 
 	sg.osc1shaper = zm.RisingSawShaper
@@ -185,6 +204,12 @@ func (sg *generator) Generate(ctx context.Context, buf []float32) (int, error) {
 		//sg.arp.Step()
 		sg.voice.Step()
 
+		gate := sg.voice.Gate()
+		for _, e := range sg.envelopes {
+			e.SetGate(gate)
+			e.Step()
+		}
+
 		sg.osc1.SetFrequency(sg.voice.Pitch())
 		sg.osc1.Step()
 
@@ -205,7 +230,9 @@ func (sg *generator) Generate(ctx context.Context, buf []float32) (int, error) {
 
 		output := sg.filt.LowPassOut()
 
+		output *= Sample(sg.ampEnv.Output())
 		output *= Sample(sg.outputLevel)
+
 		buf[i] = float32(output)
 	}
 	return len(buf), nil
