@@ -147,17 +147,18 @@ type generator struct {
 func (sg *generator) Start(ctx context.Context) error {
 	sg.filt.Model = sid.Model6581
 
-	for _, s := range []Starter{
-		&sg.voice,
-		//&sg.arp,
-		&sg.osc1,
-		&sg.lfo1,
-		&sg.lfo2,
-		&sg.filt,
-	} {
-		if err := s.Start(ctx); err != nil {
-			return err
-		}
+	if err := util.StartAll(
+		ctx,
+		[]Starter{
+			&sg.voice,
+			//&sg.arp,
+			&sg.osc1,
+			&sg.lfo1,
+			&sg.lfo2,
+			&sg.filt,
+		},
+	); err != nil {
+		return err
 	}
 
 	sg.osc1shaper = zm.RisingSawShaper

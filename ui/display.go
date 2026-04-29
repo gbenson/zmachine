@@ -15,6 +15,7 @@ import (
 	"periph.io/x/host/v3"
 
 	"gbenson.net/go/ssd1305"
+	. "gbenson.net/go/zmachine/core"
 	"gbenson.net/go/zmachine/machine"
 	"gbenson.net/go/zmachine/ui/internal/ssd1305emu"
 	"gbenson.net/go/zmachine/util"
@@ -107,15 +108,16 @@ func (d *Display) start(ctx context.Context) error {
 		return nil
 	}
 
-	for _, step := range []func(context.Context) error{
-		d.ensureDefaults,
-		d.ensureDrivers,
-		d.ensurePort,
-		d.ensureDevice,
-	} {
-		if err := step(ctx); err != nil {
-			return err
-		}
+	if err := util.StartAll(
+		ctx,
+		[]Starter{
+			StarterFunc(d.ensureDefaults),
+			StarterFunc(d.ensureDrivers),
+			StarterFunc(d.ensurePort),
+			StarterFunc(d.ensureDevice),
+		},
+	); err != nil {
+		return err
 	}
 
 	log.Info().Stringer("device", d.Device).Msg("Opened")
