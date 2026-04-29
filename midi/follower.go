@@ -31,6 +31,7 @@ type Follower struct {
 	pollID atomic.Uintptr
 }
 
+// Start implements [core.Starter].
 func (f *Follower) Start(ctx context.Context) error {
 	if f.Driver == nil {
 		panic("nil driver")

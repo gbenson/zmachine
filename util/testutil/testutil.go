@@ -6,7 +6,7 @@ import (
 
 	"gbenson.net/go/logger"
 	"gbenson.net/go/zmachine"
-	"gbenson.net/go/zmachine/util"
+	. "gbenson.net/go/zmachine/core"
 	"gotest.tools/v3/assert"
 )
 
@@ -24,10 +24,10 @@ func TestContext(t logger.Contexter) context.Context {
 	return zmachine.New().WithContext(logger.TestContext(t))
 }
 
-// TestStart starts a [util.Starter] with a [TestContext], failing
+// TestStart starts a [Starter] with a [TestContext], failing
 // the test immediately if the starter returns a non-nil error.
 // The receiver should be a [testing.T] or similar.
-func StartForTest(t Tester, s util.Starter) {
+func StartForTest(t Tester, s Starter) {
 	t.Helper()
 	assert.NilError(t, s.Start(TestContext(t)))
 }

@@ -36,6 +36,7 @@ type Display struct {
 	lastActivity atomic.Int64
 }
 
+// Start implements [Starter].
 func (d *Display) Start(ctx context.Context) error {
 	if d.Renderer == nil {
 		panic("nil renderer")

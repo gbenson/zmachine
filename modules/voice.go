@@ -69,7 +69,7 @@ type Voice struct {
 	moduleOutput atomic.Uintptr
 }
 
-// Start implements [util.Starter].
+// Start implements [Starter].
 func (v *Voice) Start(ctx context.Context) error {
 	v.log = util.Logger(ctx, v)
 	return nil

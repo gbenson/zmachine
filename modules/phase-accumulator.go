@@ -14,7 +14,7 @@ type PhaseAccumulator struct {
 	phase    Fraction // output: the accumulated phase; range: [0..1)
 }
 
-// Start implements [zmachine.Starter].
+// Start implements [Starter].
 func (pa *PhaseAccumulator) Start(ctx context.Context) error {
 	machine := zmachine.FromContext(ctx)
 	pa.timestep = machine.Config.Audio.SampleRate.Period()

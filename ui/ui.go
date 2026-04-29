@@ -25,6 +25,7 @@ type UI struct {
 	systemMenu systemMenu
 }
 
+// Start implements [Starter].
 func (ui *UI) Start(ctx context.Context) error {
 	// Display first...
 	if ui.Display.Renderer == nil {

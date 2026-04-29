@@ -136,17 +136,18 @@ type generator struct {
 	outputLevel Fraction
 }
 
-// XXX add a Stopper type to match util.Starter, then, have Start
+// XXX add a Stopper type to match Starter, then, have Start
 // build a list of started components that need stopping; implement
 // generator.stop; and defer call it above (i.e. in run) and below
 // (in Start, if any starter fails). then, make generator.in not a
 // pointer, make generator.Start start it (and so also make gen.stop
 // stop it), and remove the above midi.Follower.Start.
 
+// Start implements [Starter].
 func (sg *generator) Start(ctx context.Context) error {
 	sg.filt.Model = sid.Model6581
 
-	for _, s := range []util.Starter{
+	for _, s := range []Starter{
 		&sg.voice,
 		//&sg.arp,
 		&sg.osc1,

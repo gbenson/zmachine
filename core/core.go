@@ -35,7 +35,7 @@ type ControlSink interface {
 	ReceiveFromSurface(msg midi.Message)
 }
 
-// A Shaper samples a periodic waveform.
+// A Shaper is a component that samples a periodic waveform.
 type Shaper interface {
 	// Fraction returns the amplitude of its waveform at the given
 	// position in its cycle as a [Fraction].
@@ -44,4 +44,10 @@ type Shaper interface {
 	// Sample returns the amplitude of its waveform at the given
 	// position in its cycle as a [Sample].
 	Sample(x Fraction) Sample
+}
+
+// A Starter is a component that must be started before use.
+type Starter interface {
+	// Start causes a component to run until cancelled.
+	Start(ctx context.Context) error
 }

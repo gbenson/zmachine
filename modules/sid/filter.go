@@ -28,7 +28,7 @@ type Filter struct {
 	bp float64 // Band-pass output
 }
 
-// Start implements [zmachine.Starter].
+// Start implements [Starter].
 func (f *Filter) Start(ctx context.Context) error {
 	if f.Model == nil {
 		panic("nil model")

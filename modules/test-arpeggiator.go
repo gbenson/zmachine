@@ -19,7 +19,7 @@ type TestArpeggiator struct {
 	lastNote     uint8
 }
 
-// Start implements [zmachine.Starter].
+// Start implements [Starter].
 func (ta *TestArpeggiator) Start(ctx context.Context) error {
 	if ta.Receiver == nil {
 		panic("nil receiver")
