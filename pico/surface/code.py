@@ -54,11 +54,11 @@ class Encoder:
             self.lastpos = pos
             anychange = True
 
-        switch = self.switch.value
+        switch = not self.switch.value
         if switch != self.lastsw:
             print(f"encoder[{self.number}].switch = {switch}")
             control = self.number + 104  # 104..119 inclusive
-            value = 0 if switch else 127
+            value = 127 if switch else 0
             send_midi(ControlChange(control, value))
             self.lastsw = switch
             anychange = True
@@ -100,14 +100,14 @@ def main():
     pots = [Potentiometer(board.A2, VOLUME)]  # ADC2 == GP28 == physical pin 34
     encoders = [
         Encoder(n, *pins) for n, pins in enumerate((
-            (8, 9, 10),   # => A  Locations:
-            (11, 12, 13), # => B
-            (14, 15, 0),  # => C    +-----------+
-            (26, 27, 22), # => D    | 0         |
-            (5, 6, 7),    # => 0    |  ABCD     |
-            (2, 3, 4),    # => X    | X Y Z     |
-            (19, 20, 21), # => Y    +-----------+
-            (16, 17, 18), # => Z
+            (0, 1, 16),   # => A  Locations:
+            (2, 3, 17),   # => B
+            (4, 5, 18),   # => C    +-----------+
+            (6, 7, 19),   # => D    | 0         |
+            (8, 9, 20),   # => 0    |  ABCD     |
+            (10, 11, 21), # => X    | X Y Z     |
+            (12, 13, 22), # => Y    +-----------+
+            (14, 15, 26), # => Z
         ))
     ]
 
