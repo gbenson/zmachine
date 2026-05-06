@@ -13,21 +13,21 @@ func TestKeyTracker(t *testing.T) {
 	StartForTest(t, kt)
 
 	// nothing received, not stepped
-	assert.Equal(t, kt.Pitch(), 0*Hz)
+	assert.Equal(t, kt.Note(), 0.0)
 	assert.Equal(t, kt.Velocity(), Fraction(0))
 	assert.Equal(t, kt.Gate(), false)
 
 	// note on received, not stepped
 	kt.Receive(midi.NoteOn(0, 69-12, 123))
 
-	assert.Equal(t, kt.Pitch(), 0*Hz)
+	assert.Equal(t, kt.Note(), 0.0)
 	assert.Equal(t, kt.Velocity(), Fraction(0))
 	assert.Equal(t, kt.Gate(), false)
 
 	// received and stepped
 	kt.Step()
 
-	assert.Equal(t, kt.Pitch(), 220*Hz)
+	assert.Equal(t, kt.Note(), 57.0)
 	assert.Equal(t, kt.Velocity(), Fraction(123.0/127))
 	assert.Equal(t, kt.Gate(), true)
 
@@ -35,7 +35,7 @@ func TestKeyTracker(t *testing.T) {
 	kt.Receive(midi.NoteOn(0, 48, 11))
 	kt.Step()
 
-	assert.Equal(t, kt.Pitch(), 220*Hz)
+	assert.Equal(t, kt.Note(), 57.0)
 	assert.Equal(t, kt.Velocity(), Fraction(123.0/127))
 	assert.Equal(t, kt.Gate(), true)
 
@@ -43,7 +43,7 @@ func TestKeyTracker(t *testing.T) {
 	kt.Receive(midi.NoteOn(0, 60, 94))
 	kt.Step()
 
-	assert.Equal(t, int(kt.Pitch().Hz()), 261)
+	assert.Equal(t, kt.Note(), 60.0)
 	assert.Equal(t, kt.Velocity(), Fraction(94.0/127))
 	assert.Equal(t, kt.Gate(), true)
 
@@ -51,7 +51,7 @@ func TestKeyTracker(t *testing.T) {
 	kt.Receive(midi.NoteOff(0, 69-12))
 	kt.Step()
 
-	assert.Equal(t, int(kt.Pitch().Hz()), 261)
+	assert.Equal(t, kt.Note(), 60.0)
 	assert.Equal(t, kt.Velocity(), Fraction(94.0/127))
 	assert.Equal(t, kt.Gate(), true)
 
@@ -59,7 +59,7 @@ func TestKeyTracker(t *testing.T) {
 	kt.Receive(midi.NoteOff(0, 60))
 	kt.Step()
 
-	assert.Equal(t, int(kt.Pitch().Hz()), 130)
+	assert.Equal(t, kt.Note(), 48.0)
 	assert.Equal(t, kt.Velocity(), Fraction(11.0/127))
 	assert.Equal(t, kt.Gate(), true)
 
@@ -68,7 +68,7 @@ func TestKeyTracker(t *testing.T) {
 		kt.Receive(midi.NoteOff(0, note))
 		kt.Step()
 
-		assert.Equal(t, int(kt.Pitch().Hz()), 130)
+		assert.Equal(t, kt.Note(), 48.0)
 		assert.Equal(t, kt.Velocity(), Fraction(11.0/127))
 		assert.Equal(t, kt.Gate(), true)
 	}
@@ -77,7 +77,7 @@ func TestKeyTracker(t *testing.T) {
 	kt.Receive(midi.NoteOn(0, 48, 0))
 	kt.Step()
 
-	assert.Equal(t, int(kt.Pitch().Hz()), 130)         // floating
+	assert.Equal(t, kt.Note(), 48.0)                   // floating
 	assert.Equal(t, kt.Velocity(), Fraction(11.0/127)) // floating
 	assert.Equal(t, kt.Gate(), false)
 }

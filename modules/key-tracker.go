@@ -27,7 +27,6 @@ package modules
 
 import (
 	"context"
-	"math"
 	"sync"
 	"sync/atomic"
 
@@ -59,7 +58,7 @@ type KeyTracker struct {
 	//    nested modules where the nested module's Step is called by
 	//    the Step of the module the nested module is nested in.)
 	//  - some values are exposed (outside of KeyTracker, via accessors).
-	pitch       Frequency
+	note        float64
 	velocity    Fraction
 	gate        bool
 	lastOutputs uintptr
@@ -145,15 +144,13 @@ func (t *KeyTracker) Step() {
 
 	t.gate = true
 
-	note := int(outs & 127)
-	t.pitch = Frequency(440 * math.Pow(2, float64(note-69)/12))
-
+	t.note = float64(outs & 127)
 	t.velocity = Fraction(float64(outs>>8) / 127)
 }
 
-// Pitch returns the frequency of the last played note.
-func (t *KeyTracker) Pitch() Frequency {
-	return t.pitch
+// Note returns the MIDI note number of the last played note.
+func (t *KeyTracker) Note() float64 {
+	return t.note
 }
 
 // Velocity returns the velocity of the last played note.

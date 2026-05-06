@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"errors"
+	"math"
 	"os"
 	"os/signal"
 	"syscall"
@@ -220,7 +221,10 @@ func (sg *generator) Generate(ctx context.Context, buf []float32) (int, error) {
 			e.Step()
 		}
 
-		sg.osc1.SetFrequency(sg.keytrk.Pitch())
+		note := sg.keytrk.Note()
+		pitch := Frequency(440 * math.Pow(2, float64(note-69)/12))
+
+		sg.osc1.SetFrequency(pitch)
 		sg.osc1.Step()
 
 		oscmix := sg.osc1shaper.Sample(sg.osc1.Phase())
