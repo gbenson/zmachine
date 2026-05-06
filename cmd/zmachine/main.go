@@ -123,7 +123,9 @@ func run(ctx context.Context) error {
 type generator struct {
 	ui *zmachine_ui.UI
 
-	//arp   zm.TestArpeggiator
+	starters  []Starter
+	envelopes []envelope
+
 	keytrk zm.KeyTracker
 	osc1   zm.PhaseAccumulator
 	lfo1   zm.PhaseAccumulator
@@ -134,8 +136,7 @@ type generator struct {
 	lfo1shaper Shaper
 	lfo2shaper Shaper
 
-	ampEnv    zm.Envelope[Fraction]
-	envelopes []envelope
+	ampEnv zm.Envelope[Fraction]
 
 	outputLevel Fraction
 }
@@ -148,7 +149,6 @@ type generator struct {
 // stop it), and remove the above midi.Follower.Start.
 
 type envelope interface {
-	Starter
 	SetGate(v bool)
 	Step()
 }
@@ -157,28 +157,17 @@ type envelope interface {
 func (sg *generator) Start(ctx context.Context) error {
 	sg.filt.Model = sid.Model6581
 
-	if err := util.StartAll(
-		ctx,
-		[]Starter{
-			&sg.keytrk,
-			//&sg.arp,
-			&sg.osc1,
-			&sg.lfo1,
-			&sg.lfo2,
-			&sg.filt,
-			//&sg.ampEnv,
-		},
-	); err != nil {
-		return err
-	}
-
-	sg.envelopes = []envelope{
+	sg.addAll([]any{
+		&sg.keytrk,
+		&sg.osc1,
+		&sg.lfo1,
+		&sg.lfo2,
+		&sg.filt,
 		&sg.ampEnv,
-	}
-	for _, e := range sg.envelopes {
-		if err := e.Start(ctx); err != nil {
-			return err
-		}
+	})
+
+	if err := util.StartAll(ctx, sg.starters); err != nil {
+		return err
 	}
 
 	sg.osc1shaper = zm.RisingSawShaper
@@ -198,6 +187,21 @@ func (sg *generator) Start(ctx context.Context) error {
 	return nil
 }
 
+func (sg *generator) addAll(comps []any) {
+	for _, c := range comps {
+		sg.add(c)
+	}
+}
+
+func (sg *generator) add(comp any) {
+	if s, ok := comp.(Starter); ok {
+		sg.starters = append(sg.starters, s)
+	}
+	if e, ok := comp.(envelope); ok {
+		sg.envelopes = append(sg.envelopes, e)
+	}
+}
+
 // Receive implements [MIDISink].
 func (sg *generator) Receive(msg gomidi.Message) {
 	sg.keytrk.Receive(msg)
@@ -208,7 +212,6 @@ func (sg *generator) Generate(ctx context.Context, buf []float32) (int, error) {
 	sg.ui.Step()
 
 	for i := range buf {
-		//sg.arp.Step()
 		sg.keytrk.Step()
 
 		gate := sg.keytrk.Gate()
