@@ -7,15 +7,15 @@ package modules
 //    and can be added downstream if needed.
 //  - ranges (keyboard splits) - it should be upstream (router)
 //  - learn mode (you press a key and it uses the next note to see
-//    what device/channel/etc) this voice is - again, add upstream
-//    (router)
+//    what device/channel/etc) this key tracker is - again, add
+//    upstream (router)
 //  - polyphony - should be upstream, probably part of the router
-//    but maybe a separate PolyVoice module.  Whatever it was would
-//    likely manage a fixed number of MonoVoice objects rather than
-//    reimplementing what's here (though maybe MonoVoice could be
-//    split if tracking all notes is op for PolyVoice components)
+//    but maybe a separate PolyTracker module.  Whatever it was would
+//    likely manage a fixed number of MonoTracker objects rather than
+//    reimplementing what's here (though maybe MonoTracker could be
+//    split if tracking all notes is op for PolyTracker components)
 //    using some kind of stealing algorithm for when it runs out of
-//    voices like MIDI thing v2 does.
+//    key trackers like MIDI thing v2 does.
 //
 // DO IMPLEMENT HERE:
 //  - Retrigger (bool) If true, make the gate go down for a short time
@@ -37,9 +37,9 @@ import (
 	"gitlab.com/gomidi/midi/v2"
 )
 
-// Voice converts MIDI NoteOn and NoteOff messages into control
+// KeyTracker converts MIDI NoteOn and NoteOff messages into control
 // signals for a monophonic voice.
-type Voice struct {
+type KeyTracker struct {
 	log *logger.Logger
 
 	// Inner (internal, not-externally-visible) state:
@@ -47,7 +47,7 @@ type Voice struct {
 	//  - asynchronous (updates independently of Step)
 	//  - likely to be updated by goroutines other than the stepper
 	//  - multiple goroutines may update concurrently
-	//  - all values private within Voice (i.e.: no accessors!)
+	//  - all values private within KeyTracker (i.e.: no accessors!)
 	mu             sync.Mutex
 	noteVelocities [128]uintptr
 
@@ -58,7 +58,7 @@ type Voice struct {
 	//    may be in-flight at any given time (other than in cases of
 	//    nested modules where the nested module's Step is called by
 	//    the Step of the module the nested module is nested in.)
-	//  - some values are exposed (outside of Voice, via accessors).
+	//  - some values are exposed (outside of KeyTracker, via accessors).
 	pitch       Frequency
 	velocity    Fraction
 	gate        bool
@@ -70,15 +70,15 @@ type Voice struct {
 }
 
 // Start implements [Starter].
-func (v *Voice) Start(ctx context.Context) error {
-	v.log = util.Logger(ctx, v)
+func (t *KeyTracker) Start(ctx context.Context) error {
+	t.log = util.Logger(ctx, t)
 	return nil
 }
 
 // Receive implements [zmachine.MIDISink].
 // It is safe for concurrent use.
-func (v *Voice) Receive(msg midi.Message) {
-	v.log.Trace().
+func (t *KeyTracker) Receive(msg midi.Message) {
+	t.log.Trace().
 		Hex("_msg", []byte(msg)).
 		Stringer("msg", msg).
 		Msg("Received")
@@ -89,7 +89,7 @@ func (v *Voice) Receive(msg midi.Message) {
 	case msg.GetNoteStart(nil, &note, &vel):
 	case msg.GetNoteEnd(nil, &note):
 	default:
-		v.log.Warn().
+		t.log.Warn().
 			Hex("_msg", []byte(msg)).
 			Stringer("msg", msg).
 			Msg("Unhandled")
@@ -97,7 +97,7 @@ func (v *Voice) Receive(msg midi.Message) {
 	}
 
 	if note > 127 {
-		v.log.Error().
+		t.log.Error().
 			Hex("_msg", []byte(msg)).
 			Stringer("msg", msg).
 			Str("shouldnt_be_possible", "gomidi v2.3.23 masks the bits").
@@ -107,13 +107,13 @@ func (v *Voice) Receive(msg midi.Message) {
 	}
 
 	// Update internal state.
-	v.mu.Lock()
-	v.noteVelocities[note] = uintptr(vel)
+	t.mu.Lock()
+	t.noteVelocities[note] = uintptr(vel)
 
 	// Interpret internal state.
 	var outn, outv uintptr
 	gate := false
-	for n, v := range v.noteVelocities {
+	for n, v := range t.noteVelocities {
 		if v < 1 {
 			continue
 		}
@@ -121,47 +121,47 @@ func (v *Voice) Receive(msg midi.Message) {
 		outv = uintptr(v)
 		gate = true
 	}
-	v.mu.Unlock()
+	t.mu.Unlock()
 
 	// Transfer internal state to module outputs.
 	var outs uintptr
 	if gate {
 		outs = (outv << 8) | outn
 	}
-	v.moduleOutput.Store(outs)
+	t.moduleOutput.Store(outs)
 }
 
-func (v *Voice) Step() {
-	outs := v.moduleOutput.Load()
-	if outs == v.lastOutputs {
+func (t *KeyTracker) Step() {
+	outs := t.moduleOutput.Load()
+	if outs == t.lastOutputs {
 		return // unchanged
 	}
-	defer func() { v.lastOutputs = outs }()
+	defer func() { t.lastOutputs = outs }()
 
 	if outs == 0 {
-		v.gate = false
+		t.gate = false
 		return // leave note and velocity floating
 	}
 
-	v.gate = true
+	t.gate = true
 
 	note := int(outs & 127)
-	v.pitch = Frequency(440 * math.Pow(2, float64(note-69)/12))
+	t.pitch = Frequency(440 * math.Pow(2, float64(note-69)/12))
 
-	v.velocity = Fraction(float64(outs>>8) / 127)
+	t.velocity = Fraction(float64(outs>>8) / 127)
 }
 
 // Pitch returns the frequency of the last played note.
-func (v *Voice) Pitch() Frequency {
-	return v.pitch
+func (t *KeyTracker) Pitch() Frequency {
+	return t.pitch
 }
 
 // Velocity returns the velocity of the last played note.
-func (v *Voice) Velocity() Fraction {
-	return v.velocity
+func (t *KeyTracker) Velocity() Fraction {
+	return t.velocity
 }
 
 // Gate returns true if a note is playing, false otherwise.
-func (v *Voice) Gate() bool {
-	return v.gate
+func (t *KeyTracker) Gate() bool {
+	return t.gate
 }

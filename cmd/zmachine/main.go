@@ -90,7 +90,7 @@ func run(ctx context.Context) error {
 
 	rt := &midi.Router{GlobalReceiver: ui}
 	for i := range rt.ChannelReceivers {
-		rt.ChannelReceivers[i] = &g.voice
+		rt.ChannelReceivers[i] = &g.keytrk
 	}
 
 	f := &midi.Follower{
@@ -123,11 +123,11 @@ type generator struct {
 	ui *zmachine_ui.UI
 
 	//arp   zm.TestArpeggiator
-	voice zm.Voice
-	osc1  zm.PhaseAccumulator
-	lfo1  zm.PhaseAccumulator
-	lfo2  zm.PhaseAccumulator
-	filt  sid.Filter
+	keytrk zm.KeyTracker
+	osc1   zm.PhaseAccumulator
+	lfo1   zm.PhaseAccumulator
+	lfo2   zm.PhaseAccumulator
+	filt   sid.Filter
 
 	osc1shaper Shaper
 	lfo1shaper Shaper
@@ -159,7 +159,7 @@ func (sg *generator) Start(ctx context.Context) error {
 	if err := util.StartAll(
 		ctx,
 		[]Starter{
-			&sg.voice,
+			&sg.keytrk,
 			//&sg.arp,
 			&sg.osc1,
 			&sg.lfo1,
@@ -202,15 +202,15 @@ func (sg *generator) Generate(ctx context.Context, buf []float32) (int, error) {
 
 	for i := range buf {
 		//sg.arp.Step()
-		sg.voice.Step()
+		sg.keytrk.Step()
 
-		gate := sg.voice.Gate()
+		gate := sg.keytrk.Gate()
 		for _, e := range sg.envelopes {
 			e.SetGate(gate)
 			e.Step()
 		}
 
-		sg.osc1.SetFrequency(sg.voice.Pitch())
+		sg.osc1.SetFrequency(sg.keytrk.Pitch())
 		sg.osc1.Step()
 
 		oscmix := sg.osc1shaper.Sample(sg.osc1.Phase())
