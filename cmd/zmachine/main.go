@@ -137,7 +137,7 @@ type generator struct {
 	lfo1shaper Shaper
 	lfo2shaper Shaper
 
-	ampEnv zm.Envelope[Fraction]
+	ampEnv zm.Envelope
 
 	outputLevel Fraction
 }
@@ -244,7 +244,7 @@ func (sg *generator) Generate(ctx context.Context, buf []float32) (int, error) {
 
 		output := sg.filt.LowPassOut()
 
-		output *= Sample(sg.ampEnv.Output())
+		output *= Sample(sg.ampEnv.Level())
 		output *= Sample(sg.outputLevel)
 
 		buf[i] = float32(output)
