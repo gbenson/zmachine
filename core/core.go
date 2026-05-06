@@ -51,3 +51,8 @@ type Starter interface {
 	// Start causes a component to run until cancelled.
 	Start(ctx context.Context) error
 }
+
+// A Parameterized is a component with user-settable parameters.
+type Parameterized interface {
+	Parameters() Parameters
+}

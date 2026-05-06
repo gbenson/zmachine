@@ -66,6 +66,17 @@ func (e *Envelope) Start(ctx context.Context) error {
 	return nil
 }
 
+// Parameters implements [Parameterized].
+func (e *Envelope) Parameters() Parameters {
+	return Parameters{
+		"attack":  &e.Attack.Duration,
+		"decay":   &e.Decay.Duration,
+		"sustain": &e.Sustain.Level,
+		"release": &e.Release.Duration,
+		"rate":    &e.Rate,
+	}
+}
+
 func (e *Envelope) Gate() bool {
 	return e.gate
 }
