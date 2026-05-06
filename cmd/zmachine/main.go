@@ -17,6 +17,7 @@ import (
 	zmachine_ui "gbenson.net/go/zmachine/ui"
 	"gbenson.net/go/zmachine/util"
 	"github.com/veandco/go-sdl2/sdl"
+	gomidi "gitlab.com/gomidi/midi/v2"
 	"gitlab.com/gomidi/midi/v2/drivers/rtmididrv"
 )
 
@@ -90,7 +91,7 @@ func run(ctx context.Context) error {
 
 	rt := &midi.Router{GlobalReceiver: ui}
 	for i := range rt.ChannelReceivers {
-		rt.ChannelReceivers[i] = &g.keytrk
+		rt.ChannelReceivers[i] = g
 	}
 
 	f := &midi.Follower{
@@ -197,6 +198,12 @@ func (sg *generator) Start(ctx context.Context) error {
 	return nil
 }
 
+// Receive implements [MIDISink].
+func (sg *generator) Receive(msg gomidi.Message) {
+	sg.keytrk.Receive(msg)
+}
+
+// Generate implements [AudioSource].
 func (sg *generator) Generate(ctx context.Context, buf []float32) (int, error) {
 	sg.ui.Step()
 
