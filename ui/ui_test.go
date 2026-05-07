@@ -7,7 +7,10 @@ import (
 	"gotest.tools/v3/assert"
 )
 
-var StartForTest = testutil.StartForTest
+var (
+	NearlyEqual  = testutil.NearlyEqual
+	StartForTest = testutil.StartForTest
+)
 
 func TestInitialPage(t *testing.T) {
 	var ui UI

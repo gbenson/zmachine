@@ -137,7 +137,8 @@ type generator struct {
 	lfo1shaper Shaper
 	lfo2shaper Shaper
 
-	ampEnv zm.Envelope
+	ampEnv  zm.Envelope
+	filtEnv zm.Envelope
 
 	outputLevel Fraction
 }
@@ -165,6 +166,7 @@ func (sg *generator) Start(ctx context.Context) error {
 		&sg.lfo2,
 		&sg.filt,
 		&sg.ampEnv,
+		&sg.filtEnv,
 	})
 
 	if err := util.StartAll(ctx, sg.starters); err != nil {
@@ -184,6 +186,11 @@ func (sg *generator) Start(ctx context.Context) error {
 	sg.filt.SetFC(2000)
 
 	sg.outputLevel = 0.125 // approx -18dB; 7 on a 0..10 ↦ -60..0dB volume knob
+
+	sg.filtEnv.Sustain.Level.Min = -1
+
+	sg.ui.AddPage(zmachine_ui.NewEnvelopePage("Amplitude envelope", &sg.ampEnv))
+	sg.ui.AddPage(zmachine_ui.NewEnvelopePage("Filter envelope", &sg.filtEnv))
 
 	return nil
 }

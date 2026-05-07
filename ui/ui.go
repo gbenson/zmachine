@@ -127,6 +127,10 @@ func (ui *UI) Step() {
 	isFirstStep := !ui.stepped.Swap(true)
 	if isFirstStep {
 		ui.systemMenu.onFirstStep()
+		if len(ui.pages) > 1 {
+			// step over ui.systemMenu to the first user-added page
+			ui.selectedPage.CompareAndSwap(0, 1)
+		}
 	}
 
 	collected := ui.surface.Scan()
