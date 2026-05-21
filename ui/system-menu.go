@@ -63,7 +63,7 @@ func (m *systemMenu) humanUptime(d time.Duration) string {
 }
 
 // Update implements [Updatable].
-func (m *systemMenu) Update(deltas []int, edges []Edge) {
+func (m *systemMenu) Update(deltas []float64, edges []Edge) {
 	const enc = encoderB
 	x := m.shutdownSelX.Add(int32(deltas[enc]))
 	switch {

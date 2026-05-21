@@ -2,6 +2,7 @@ package ui
 
 import (
 	"context"
+	"time"
 
 	"gbenson.net/go/logger"
 	"gbenson.net/go/zmachine/util"
@@ -30,6 +31,13 @@ type surface struct {
 
 func (s *surface) init(ctx context.Context) {
 	s.log = util.Logger(ctx, s)
+
+	for i := range s.encoders {
+		if encoderID(i) == menuEncoder {
+			continue
+		}
+		s.encoders[i].setAcceleration(500 * time.Millisecond)
+	}
 }
 
 // Receive implements [zmachine.MIDISink].
@@ -115,7 +123,7 @@ func (s *surface) onEncoderClicked(n int, clicked bool) {
 }
 
 type collectedState struct {
-	encoderDeltas [numEncoders]int
+	encoderDeltas [numEncoders]float64
 	encoderEdges  [numEncoders]Edge
 	volumeValue   int
 	volumeDelta   int

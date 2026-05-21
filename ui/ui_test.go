@@ -15,14 +15,14 @@ func TestInitialPage(t *testing.T) {
 }
 
 type testPage struct {
-	deltas []int
+	deltas []float64
 }
 
 func (tp *testPage) Render(r Renderer) {
 	panic("should not call")
 }
 
-func (tp *testPage) Update(deltas []int, edges []Edge) {
+func (tp *testPage) Update(deltas []float64, edges []Edge) {
 	tp.deltas = append(tp.deltas, deltas...)
 }
 
@@ -46,8 +46,8 @@ func TestStepUpdate(t *testing.T) {
 	assert.Check(t, tp.deltas == nil)
 	ui.Step()
 	assert.Equal(t, len(tp.deltas), 4)
-	assert.Equal(t, tp.deltas[encoderA], 1)
-	assert.Equal(t, tp.deltas[encoderB], 4)
-	assert.Equal(t, tp.deltas[encoderC], 9)
-	assert.Equal(t, tp.deltas[encoderD], 16)
+	assert.Equal(t, tp.deltas[encoderA], 1.0)
+	assert.Equal(t, tp.deltas[encoderB], 4.0)
+	assert.Equal(t, tp.deltas[encoderC], 9.0)
+	assert.Equal(t, tp.deltas[encoderD], 16.0)
 }

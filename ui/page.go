@@ -10,5 +10,5 @@ type Page interface {
 
 type Updatable interface {
 	Page
-	Update(deltas []int, edges []Edge)
+	Update(deltas []float64, edges []Edge)
 }
