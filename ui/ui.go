@@ -19,7 +19,7 @@ type UI struct {
 
 	currentPage  atomic.Pointer[Page]
 	pages        []Page
-	selectedPage atomic.Uintptr
+	selectedPage atomic.Int32
 
 	loggerPage logFollower
 	systemMenu systemMenu
@@ -133,12 +133,16 @@ func (ui *UI) Step() {
 
 	delta := collected.encoderDeltas[menuEncoder]
 	if delta != 0 || isFirstStep {
-		index := ui.selectedPage.Add(uintptr(delta))
-		count := len(ui.pages)
+		index := ui.selectedPage.Add(int32(delta))
+		count := int32(len(ui.pages))
 		if count < 1 {
 			return // no pages == no redraws
 		}
-		page := ui.pages[index%uintptr(count)]
+		index %= count
+		if index < 0 {
+			index += count
+		}
+		page := ui.pages[index]
 		ui.currentPage.Store(&page)
 	} else {
 		page := ui.CurrentPage()
