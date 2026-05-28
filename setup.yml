@@ -125,6 +125,9 @@
           # Disable the rainbow splash screen
           disable_splash=1
 
+          # Disable probing I2C for PoE HAT fan control on startup
+          disable_poe_fan=1
+
           # Disable Bluetooth
           dtoverlay=disable-bt
 
