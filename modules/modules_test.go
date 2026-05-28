@@ -9,6 +9,7 @@ import (
 )
 
 var (
+	NearlyEqual  = testutil.NearlyEqual
 	StartForTest = testutil.StartForTest
 	TestContext  = testutil.TestContext
 )

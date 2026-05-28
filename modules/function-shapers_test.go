@@ -44,8 +44,7 @@ func TestSineShaperSample(t *testing.T) {
 		x := Fraction(float64(n) / float64(len(testWaveform)))
 		y := SineShaper.Sample(x)
 		t.Logf("n=%d, x=%6.4f, y=%4.2f", n, x.Float64(), y.Float64())
-		delta := expectY - y.Float64()
-		assert.Assert(t, math.Abs(delta) < 1e-12)
+		assert.Check(t, NearlyEqual(y.Float64(), expectY))
 	}
 }
 
