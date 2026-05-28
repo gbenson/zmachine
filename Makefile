@@ -1,5 +1,12 @@
+DEFAULT_GOFLAGS := -trimpath -ldflags="-s -w"
+
+# Limit go build concurrency on low-memory systems.
+ifeq ($(shell free -g | awk '/^Mem:/ {print $$2}'), 0)
+    DEFAULT_GOFLAGS += -p=1
+endif
+
 GOLANG_VERSION ?= $(shell sed -n 's/^go //p' go.mod)
-GOFLAGS ?= -trimpath -ldflags="-s -w"
+GOFLAGS ?= $(DEFAULT_GOFLAGS)
 
 export BUILDER_IMAGE ?= golang:$(GOLANG_VERSION)-trixie
 export BUILDER_UID ?= $(shell id -u)
