@@ -223,6 +223,22 @@
       tags:
         - devel
 
+    - name: Ampy works without ubinascii
+      ansible.builtin.replace:
+        path: "/opt/ampy/lib/{{ python }}/site-packages/ampy/files.py"
+        regexp: ubinascii
+        replace: binascii
+      vars:
+        python: >-
+          python{{
+          ansible_facts['python']['version']['major']
+          }}.{{
+          ansible_facts['python']['version']['minor']
+          }}
+      become: yes
+      tags:
+        - devel
+
     - name: Ampy is configured
       ansible.builtin.file:
         src: /opt/ampy/bin/ampy
