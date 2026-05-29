@@ -232,6 +232,13 @@
       tags:
         - devel
 
+    - name: Ampy is configured
+      ansible.builtin.lineinfile:
+        path: ~/.profile
+        line: export AMPY_PORT=/dev/ttyACM0
+      tags:
+        - devel
+
     - name: Required firmware is downloaded
       ansible.builtin.get_url:
         url: "{{ item['download_url'] }}"
