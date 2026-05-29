@@ -93,7 +93,7 @@ class Potentiometer:
         pos = self.bufpos
         lastsum = self.lastsum
         nextsum = lastsum - buf[pos] + val
-        print(f"\x1B[34m{val:4} {pos:3} {lastsum:x} {nextsum:x}\x1B[0m")
+        #print(f"\x1B[34m{val:4} {pos:3} {lastsum:x} {nextsum:x}\x1B[0m")
         buf[pos] = val
         self.bufpos = (pos + 1) & self.smoothmask
 
