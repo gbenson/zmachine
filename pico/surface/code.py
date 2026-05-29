@@ -67,26 +67,56 @@ class Encoder:
 
 
 class Potentiometer:
-    def __init__(self, pin, cc_msb, cc_lsb=-1, *, squelch=64):
+    def __init__(self, pin, cc_msb, cc_lsb=-1, *, smooth=16):
         if cc_lsb < 0:
             cc_lsb = cc_msb + 32
         self.cc_msb = cc_msb
         self.cc_lsb = cc_lsb
         self.pot = AnalogIn(pin)
-        self.lastval = self.pot.value
-        self.squelch = squelch
+
+        # smooth must be a power of two
+        self.smoothmask = (smooth - 1)
+        self.smoothshift = self.smoothmask.bit_length()
+        if (1 << self.smoothshift) != smooth:
+            raise ValueError("must be a power of 2")
+
+        val = self.pot.value
+        self.buf = [val] * smooth
+        self.lastsum = sum(self.buf)
+        self.bufpos = 0
+        self.lastval = val
 
     def update(self):
-        # Pico has 12-bit ADC, so 4096 possible values, but the
-        # library scales values up to uint16 (so 0..65535), then
-        # we then scale them down to the 14 bits we can fit in a
-        # regular (paired) MIDI CC.
-        val = self.pot.value >> 2
-        if abs(val - self.lastval) < self.squelch:
+        val = self.pot.value
+
+        buf = self.buf
+        pos = self.bufpos
+        lastsum = self.lastsum
+        nextsum = lastsum - buf[pos] + val
+        print(f"\x1B[34m{val:4} {pos:3} {lastsum:x} {nextsum:x}\x1B[0m")
+        buf[pos] = val
+        self.bufpos = (pos + 1) & self.smoothmask
+
+        if lastsum == nextsum:
             return False
+        self.lastsum = nextsum
+
+        # AnalogIn.value returns uint16 (so 0..65535), but the Pico
+        # has a 12-bit ADC.  We're shifting to divide by len(self.buf)
+        # anyway, so we add 4 to that shift to remove the extra 4 bits
+        # at the same time.
+        val = nextsum >> (self.smoothshift + 4)
+
+        if abs(val - self.lastval) < 2:
+            return False
+        self.lastval = val
+
+        # Now upscale the 12-bit value into the 14 bits that fit in a
+        # regular (paired) MIDI CC.
+        val <<= 2
+
         print(f"potentiometer[{self.cc_msb}].value = {val}")
         self.send_value(val)
-        self.lastval = val
         return True
 
     def send_value(self, value):
