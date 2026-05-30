@@ -35,8 +35,12 @@ func (ui *UI) Start(ctx context.Context) error {
 		return err
 	}
 
-	// ...then everything else.
-	ui.surface.init(ctx)
+	// ...then everything else
+	if err := ui.surface.Start(ctx); err != nil {
+		defer ui.Stop(ctx)
+		return err
+	}
+
 	ui.systemMenu.init(ctx)
 	ui.AddPage(&ui.systemMenu)
 	return nil
@@ -45,6 +49,7 @@ func (ui *UI) Start(ctx context.Context) error {
 func (ui *UI) Stop(ctx context.Context) {
 	defer util.LoggedClose(ctx, &ui.loggerPage)
 	defer ui.Display.Stop(ctx)
+	defer ui.surface.Stop(ctx)
 }
 
 // Logger returns a logger that updates the log follower page.
@@ -134,6 +139,11 @@ func (ui *UI) Step() {
 	}
 
 	collected := ui.surface.Scan()
+	if delta := collected.potDeltas[volumePot]; delta != 0 {
+		ui.Logger().Trace().
+			Float64("volume", collected.potValues[volumePot]).
+			Msg("")
+	}
 
 	delta := collected.encoderDeltas[menuEncoder]
 	if delta != 0 || isFirstStep {

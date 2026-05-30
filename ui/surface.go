@@ -5,11 +5,13 @@ import (
 	"time"
 
 	"gbenson.net/go/logger"
+	. "gbenson.net/go/zmachine/core"
 	"gbenson.net/go/zmachine/util"
 	"gitlab.com/gomidi/midi/v2"
 )
 
 type encoderID int
+type potID int
 
 const (
 	encoderA encoderID = iota
@@ -23,13 +25,20 @@ const (
 	numEncoders
 )
 
+const (
+	volumePot potID = iota
+	numPots
+)
+
 type surface struct {
 	log      *logger.Logger
 	encoders [numEncoders]encoder
+	pots     [numPots]pairedCC
 	scanbuf  collectedState
 }
 
-func (s *surface) init(ctx context.Context) {
+// Start implements [Starter].
+func (s *surface) Start(ctx context.Context) error {
 	s.log = util.Logger(ctx, s)
 
 	for i := range s.encoders {
@@ -37,6 +46,18 @@ func (s *surface) init(ctx context.Context) {
 			continue
 		}
 		s.encoders[i].setAcceleration(500 * time.Millisecond)
+	}
+
+	pots := make([]Starter, len(s.pots))
+	for i := range s.pots {
+		pots[i] = &s.pots[i]
+	}
+	return util.StartAll(ctx, pots)
+}
+
+func (s *surface) Stop(ctx context.Context) {
+	for i := range s.pots {
+		defer s.pots[i].Stop(ctx)
 	}
 }
 
@@ -66,10 +87,10 @@ func (s *surface) receive(msg midi.Message) bool {
 
 	switch {
 	case cc == midi.VolumeMSB:
-		s.onVolumeMSB(int(v))
+		s.pots[volumePot].receiveMSB(v)
 
 	case cc == midi.VolumeLSB:
-		s.onVolumeLSB(int(v))
+		s.pots[volumePot].receiveLSB(v)
 
 	case cc >= encoderStart && cc < encoderLimit:
 		n := int(cc - encoderStart)
@@ -84,18 +105,6 @@ func (s *surface) receive(msg midi.Message) bool {
 	}
 
 	return true
-}
-
-func (s *surface) onVolumeMSB(v int) {
-	s.log.Trace().
-		Int("volume_msb", v).
-		Msg("Unhandled")
-}
-
-func (s *surface) onVolumeLSB(v int) {
-	s.log.Trace().
-		Int("volume_lsb", v).
-		Msg("Unhandled")
 }
 
 func (s *surface) onEncoderMoved(n, amount int) {
@@ -125,8 +134,8 @@ func (s *surface) onEncoderClicked(n int, clicked bool) {
 type collectedState struct {
 	encoderDeltas [numEncoders]float64
 	encoderEdges  [numEncoders]Edge
-	volumeValue   int
-	volumeDelta   int
+	potValues     [numPots]float64
+	potDeltas     [numPots]float64
 }
 
 func (s *surface) Scan() *collectedState {
@@ -135,6 +144,10 @@ func (s *surface) Scan() *collectedState {
 		cs.encoderDeltas[i] = s.encoders[i].collectMovement()
 		cs.encoderEdges[i] = s.encoders[i].collectEdges()
 	}
-	// XXX volume!
+	for i := range s.pots { // likewise, don't copy
+		v := float64(s.pots[i].Load()) / ((1 << 14) - 1)
+		cs.potDeltas[i] = cs.potValues[i] - v
+		cs.potValues[i] = v
+	}
 	return cs
 }
