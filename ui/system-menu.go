@@ -8,6 +8,7 @@ import (
 
 	"gbenson.net/go/logger"
 	"gbenson.net/go/microfont"
+	"gbenson.net/go/zmachine/surface"
 	"gbenson.net/go/zmachine/util"
 )
 
@@ -63,13 +64,13 @@ func (m *systemMenu) humanUptime(d time.Duration) string {
 }
 
 // Update implements [Updatable].
-func (m *systemMenu) Update(deltas []float64, edges []Edge) {
-	const enc = encoderB
-	x := m.shutdownSelX.Add(int32(deltas[enc]))
+func (m *systemMenu) Update(s *surface.State) {
+	e := s.Encoders[surface.EncoderB]
+	x := m.shutdownSelX.Add(int32(e.Delta))
 	switch {
 	case x < shutdownYesBoxMinX:
 	case x > shutdownYesBoxMaxX:
-	case edges[enc]&FallingEdge == 0:
+	case e.Edges&surface.FallingEdge == 0:
 	default:
 		m.shutdownSystem()
 	}

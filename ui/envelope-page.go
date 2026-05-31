@@ -5,6 +5,7 @@ import (
 
 	"gbenson.net/go/microfont"
 	. "gbenson.net/go/zmachine/core"
+	"gbenson.net/go/zmachine/surface"
 )
 
 type envelopePage struct {
@@ -59,8 +60,8 @@ func (page *envelopePage) Render(r Renderer) {
 }
 
 // Update implements [Updatable].
-func (page *envelopePage) Update(deltas []float64, edges []Edge) {
+func (page *envelopePage) Update(s *surface.State) {
 	for i, p := range page.Params {
-		p.Update(deltas[i])
+		p.Update(s.Encoders[i].Delta)
 	}
 }

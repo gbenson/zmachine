@@ -1,4 +1,4 @@
-package ui
+package surface
 
 type Edge int
 

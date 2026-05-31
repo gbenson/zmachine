@@ -3,7 +3,9 @@ package ui
 import (
 	"testing"
 
+	"gbenson.net/go/zmachine/surface"
 	"gbenson.net/go/zmachine/util/testutil"
+	"gitlab.com/gomidi/midi/v2"
 	"gotest.tools/v3/assert"
 )
 
@@ -25,8 +27,10 @@ func (tp *testPage) Render(r Renderer) {
 	panic("should not call")
 }
 
-func (tp *testPage) Update(deltas []float64, edges []Edge) {
-	tp.deltas = append(tp.deltas, deltas...)
+func (tp *testPage) Update(s *surface.State) {
+	for _, e := range s.Encoders {
+		tp.deltas = append(tp.deltas, e.Delta)
+	}
 }
 
 func TestStepUpdate(t *testing.T) {
@@ -39,18 +43,21 @@ func TestStepUpdate(t *testing.T) {
 
 	assert.Equal(t, ui.stepped.Swap(true), false)
 
-	for i, _ := range ui.surface.encoders {
-		if i == int(menuEncoder) {
-			continue
-		}
-		ui.surface.encoders[i].receiveMovement(i*i + 2*i + 1)
+	for i := range uint8(4) {
+		ui.ReceiveFromSurface(
+			midi.ControlChange(
+				i, //channel, should be ignored
+				midi.GeneralPurposeSlider1+i,
+				i*i+2*i+65,
+			),
+		)
 	}
 
 	assert.Check(t, tp.deltas == nil)
 	ui.Step()
-	assert.Equal(t, len(tp.deltas), 4)
-	assert.Equal(t, tp.deltas[encoderA], 1.0)
-	assert.Equal(t, tp.deltas[encoderB], 4.0)
-	assert.Equal(t, tp.deltas[encoderC], 9.0)
-	assert.Equal(t, tp.deltas[encoderD], 16.0)
+	assert.Equal(t, len(tp.deltas), int(surface.NumEncoders))
+	assert.Equal(t, tp.deltas[surface.EncoderA], 1.0)
+	assert.Equal(t, tp.deltas[surface.EncoderB], 4.0)
+	assert.Equal(t, tp.deltas[surface.EncoderC], 9.0)
+	assert.Equal(t, tp.deltas[surface.EncoderD], 16.0)
 }

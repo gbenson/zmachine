@@ -7,6 +7,7 @@ import (
 
 	"gbenson.net/go/logger"
 	"gbenson.net/go/zmachine/core"
+	"gbenson.net/go/zmachine/surface"
 	"gbenson.net/go/zmachine/util"
 	"gitlab.com/gomidi/midi/v2"
 	"periph.io/x/devices/v3/ssd1306/image1bit"
@@ -14,7 +15,7 @@ import (
 
 type UI struct {
 	Display Display
-	surface surface
+	surface surface.Surface
 	stepped atomic.Bool
 
 	currentPage  atomic.Pointer[Page]
@@ -138,14 +139,14 @@ func (ui *UI) Step() {
 		}
 	}
 
-	collected := ui.surface.Scan()
-	if delta := collected.potDeltas[volumePot]; delta != 0 {
+	s := ui.surface.Scan()
+	if delta := s.Pots[surface.VolumePot].Delta; delta != 0 {
 		ui.Logger().Trace().
-			Float64("volume", collected.potValues[volumePot]).
+			Float64("volume", s.Pots[surface.VolumePot].Value).
 			Msg("")
 	}
 
-	delta := collected.encoderDeltas[menuEncoder]
+	delta := s.Encoders[surface.MenuEncoder].Delta
 	if delta != 0 || isFirstStep {
 		index := ui.selectedPage.Add(int32(delta))
 		count := int32(len(ui.pages))
@@ -161,9 +162,7 @@ func (ui *UI) Step() {
 	} else {
 		page := ui.CurrentPage()
 		if p, ok := page.(Updatable); ok {
-			deltas := collected.encoderDeltas[:encoderD+1]
-			edges := collected.encoderEdges[:encoderD+1]
-			p.Update(deltas, edges)
+			p.Update(s)
 		}
 	}
 }

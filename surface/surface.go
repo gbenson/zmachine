@@ -1,4 +1,4 @@
-package ui
+package surface
 
 import (
 	"context"
@@ -10,39 +10,39 @@ import (
 	"gitlab.com/gomidi/midi/v2"
 )
 
-type encoderID int
-type potID int
+type EncoderID int
+type PotID int
 
 const (
-	encoderA encoderID = iota
-	encoderB
-	encoderC
-	encoderD
-	menuEncoder
-	freqEncoder
-	resEncoder
-	modEncoder
-	numEncoders
+	EncoderA EncoderID = iota
+	EncoderB
+	EncoderC
+	EncoderD
+	MenuEncoder
+	EncoderX
+	EncoderY
+	EncoderZ
+	NumEncoders
 )
 
 const (
-	volumePot potID = iota
-	numPots
+	VolumePot PotID = iota
+	NumPots
 )
 
-type surface struct {
+type Surface struct {
 	log      *logger.Logger
-	encoders [numEncoders]encoder
-	pots     [numPots]pairedCC
-	scanbuf  collectedState
+	encoders [NumEncoders]encoder
+	pots     [NumPots]pairedCC
+	scanBuf  State
 }
 
 // Start implements [Starter].
-func (s *surface) Start(ctx context.Context) error {
+func (s *Surface) Start(ctx context.Context) error {
 	s.log = util.Logger(ctx, s)
 
 	for i := range s.encoders {
-		if encoderID(i) == menuEncoder {
+		if EncoderID(i) == MenuEncoder {
 			continue
 		}
 		s.encoders[i].setAcceleration(500 * time.Millisecond)
@@ -55,14 +55,14 @@ func (s *surface) Start(ctx context.Context) error {
 	return util.StartAll(ctx, pots)
 }
 
-func (s *surface) Stop(ctx context.Context) {
+func (s *Surface) Stop(ctx context.Context) {
 	for i := range s.pots {
 		defer s.pots[i].Stop(ctx)
 	}
 }
 
 // Receive implements [zmachine.MIDISink].
-func (s *surface) Receive(msg midi.Message) {
+func (s *Surface) Receive(msg midi.Message) {
 	if s.receive(msg) {
 		return
 	}
@@ -73,7 +73,7 @@ func (s *surface) Receive(msg midi.Message) {
 		Msg("Unhandled")
 }
 
-func (s *surface) receive(msg midi.Message) bool {
+func (s *Surface) receive(msg midi.Message) bool {
 	var cc, v uint8
 	if !msg.GetControlChange(nil, &cc, &v) {
 		return false
@@ -87,10 +87,10 @@ func (s *surface) receive(msg midi.Message) bool {
 
 	switch {
 	case cc == midi.VolumeMSB:
-		s.pots[volumePot].receiveMSB(v)
+		s.pots[VolumePot].receiveMSB(v)
 
 	case cc == midi.VolumeLSB:
-		s.pots[volumePot].receiveLSB(v)
+		s.pots[VolumePot].receiveLSB(v)
 
 	case cc >= encoderStart && cc < encoderLimit:
 		n := int(cc - encoderStart)
@@ -107,7 +107,7 @@ func (s *surface) receive(msg midi.Message) bool {
 	return true
 }
 
-func (s *surface) onEncoderMoved(n, amount int) {
+func (s *Surface) onEncoderMoved(n, amount int) {
 	if n >= 0 && n < len(s.encoders) {
 		s.encoders[n].receiveMovement(amount)
 		return
@@ -119,7 +119,7 @@ func (s *surface) onEncoderMoved(n, amount int) {
 		Msg("Unhandled")
 }
 
-func (s *surface) onEncoderClicked(n int, clicked bool) {
+func (s *Surface) onEncoderClicked(n int, clicked bool) {
 	if n >= 0 && n < len(s.encoders) {
 		s.encoders[n].receiveEdge(clicked)
 		return
@@ -131,23 +131,36 @@ func (s *surface) onEncoderClicked(n int, clicked bool) {
 		Msg("Unhandled")
 }
 
-type collectedState struct {
-	encoderDeltas [numEncoders]float64
-	encoderEdges  [numEncoders]Edge
-	potValues     [numPots]float64
-	potDeltas     [numPots]float64
+type State struct {
+	Encoders [NumEncoders]EncoderState
+	Pots     [NumPots]PotState
 }
 
-func (s *surface) Scan() *collectedState {
-	cs := &s.scanbuf
+type EncoderState struct {
+	Delta float64 // Movement since last scan.
+	Edges Edge    // Switch edges since last scan.
+}
+
+type PotState struct {
+	Value float64 // Value when scanned.
+	Delta float64 // Movement since last scan.
+}
+
+func (s *Surface) Scan() *State {
+	cs := &s.scanBuf
 	for i := range s.encoders { // do not copy!
-		cs.encoderDeltas[i] = s.encoders[i].collectMovement()
-		cs.encoderEdges[i] = s.encoders[i].collectEdges()
+		src := &s.encoders[i]
+		dst := &cs.Encoders[i]
+
+		dst.Delta = src.collectMovement()
+		dst.Edges = src.collectEdges()
 	}
-	for i := range s.pots { // likewise, don't copy
+	for i := range s.pots { // do not copy!
+		dst := &cs.Pots[i]
+
 		v := float64(s.pots[i].Load()) / ((1 << 14) - 1)
-		cs.potDeltas[i] = cs.potValues[i] - v
-		cs.potValues[i] = v
+		dst.Delta = v - dst.Value
+		dst.Value = v
 	}
 	return cs
 }
