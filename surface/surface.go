@@ -48,10 +48,16 @@ func (s *Surface) Start(ctx context.Context) error {
 		s.encoders[i].setAcceleration(500 * time.Millisecond)
 	}
 
+	// XXX hack in a default volume so we don't get zero when running
+	// without a surface (in tests, on laptops, etc).  2048 maps to
+	// 0.125: roughly -18dB, or 7 on a 0..10 => -60..0dB volume knob.
+	s.pots[VolumePot].v.Store(2048)
+
 	pots := make([]Starter, len(s.pots))
 	for i := range s.pots {
 		pots[i] = &s.pots[i]
 	}
+
 	return util.StartAll(ctx, pots)
 }
 

@@ -140,7 +140,7 @@ type generator struct {
 	ampEnv  zm.Envelope
 	filtEnv zm.Envelope
 
-	outputLevel Fraction
+	outputLevel Parameter
 }
 
 // XXX add a Stopper type to match Starter, then, have Start
@@ -185,12 +185,13 @@ func (sg *generator) Start(ctx context.Context) error {
 
 	sg.filt.SetFC(2000)
 
-	sg.outputLevel = 0.125 // approx -18dB; 7 on a 0..10 ↦ -60..0dB volume knob
-
 	sg.filtEnv.Sustain.Level.Min = -1
 
 	sg.ui.AddPage(zmachine_ui.NewEnvelopePage("Amplitude envelope", &sg.ampEnv))
 	sg.ui.AddPage(zmachine_ui.NewEnvelopePage("Filter envelope", &sg.filtEnv))
+
+	sg.outputLevel.Max = 1
+	sg.ui.AddGlobalParameter("output_level", &sg.outputLevel)
 
 	return nil
 }
@@ -218,6 +219,7 @@ func (sg *generator) Receive(msg gomidi.Message) {
 // Generate implements [AudioSource].
 func (sg *generator) Generate(ctx context.Context, buf []float32) (int, error) {
 	sg.ui.Step()
+	outputLevel := sg.outputLevel.Load()
 
 	for i := range buf {
 		sg.keytrk.Step()
@@ -252,7 +254,7 @@ func (sg *generator) Generate(ctx context.Context, buf []float32) (int, error) {
 		output := sg.filt.LowPassOut()
 
 		output *= Sample(sg.ampEnv.Level())
-		output *= Sample(sg.outputLevel)
+		output *= Sample(outputLevel)
 
 		buf[i] = float32(output)
 	}

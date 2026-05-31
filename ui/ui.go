@@ -24,6 +24,8 @@ type UI struct {
 
 	loggerPage logFollower
 	systemMenu systemMenu
+
+	volume *core.Parameter
 }
 
 // Start implements [Starter].
@@ -76,6 +78,18 @@ func (ui *UI) ReceiveFromSurface(msg midi.Message) {
 // control change messages from the (hardware) control surface.
 func (ui *UI) ControlSurface() core.MIDISink {
 	return &ui.surface
+}
+
+// AddGlobalParameter adds a global parameter.
+func (ui *UI) AddGlobalParameter(name string, p *core.Parameter) {
+	if p == nil {
+		panic("nil parameter")
+	} else if name != "output_level" {
+		panic("unhandled global parameter " + name)
+	} else if ui.volume != nil {
+		panic("parameter exists")
+	}
+	ui.volume = p
 }
 
 // AddPage appends a page to the main menu.  It panics if Step
@@ -140,10 +154,8 @@ func (ui *UI) Step() {
 	}
 
 	s := ui.surface.Scan()
-	if delta := s.Pots[surface.VolumePot].Delta; delta != 0 {
-		ui.Logger().Trace().
-			Float64("volume", s.Pots[surface.VolumePot].Value).
-			Msg("")
+	if v := ui.volume; v != nil {
+		v.Store(s.Pots[surface.VolumePot].Value)
 	}
 
 	delta := s.Encoders[surface.MenuEncoder].Delta
